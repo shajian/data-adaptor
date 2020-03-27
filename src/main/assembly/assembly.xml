@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<assembly>
+    <id>analysis-hanlp-release</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+<!--    <includeBaseDirectory>false</includeBaseDirectory>-->
+    <fileSets>
+        <fileSet>
+            <directory>${project.basedir}/config</directory>
+            <outputDirectory>/lib/config</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir>/bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources</directory>
+            <outputDirectory>/lib</outputDirectory>
+        </fileSet>
+    </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/lib</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <useTransitiveFiltering>true</useTransitiveFiltering>
+            <excludes>
+                <exclude>org.springframework.boot:spring-boot-starter-data-mongodb</exclude>
+                <exclude>org.apache.hbase:hbase-client</exclude>
+            </excludes>
+        </dependencySet>
+    </dependencySets>
+</assembly>

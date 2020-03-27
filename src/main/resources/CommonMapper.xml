@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qianzhan.qichamao.dal.mybatis.CommonMapper">
+    <insert id="insertCheckpoint0" parameterType="string">
+        INSERT INTO Counter (ct_key, ct_value) VALUES (#{key}, 0)
+    </insert>
+
+    <insert id="insertCheckpoint" parameterType="string">
+        INSERT INTO Counter (ct_key, ct_value) VALUES (#{key}, #{value})
+    </insert>
+
+    <update id="updateCheckpoint">
+        UPDATE Counter SET ct_value = #{value} WHERE ct_key = #{key};
+    </update>
+
+    <select id="getCheckpoint" parameterType="string" resultType="int">
+        SELECT ct_value from Counter where ct_key=#{key};
+    </select>
+</mapper>

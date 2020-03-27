@@ -1,0 +1,13 @@
+# browse counting task is just served for cache permanently or during ES-company-data updating
+# Keep configurations untouched when you can't understand their meaning.
+
+# 1. create cache initially; 2. update cache
+state=1
+
+# interval between each two times of updating. The unit is 'day'.
+interval=2
+
+batch=1000
+
+
+buffer_threshold=1000

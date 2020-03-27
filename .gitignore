@@ -1,0 +1,9 @@
+# ignore `log` dir, and its subdirectory and files
+log/
+lib/
+.idea/
+target/
+out/
+
+*.iml
+**.private

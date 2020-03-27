@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+    <properties resource="db.properties"></properties>
+
+    <typeAliases>
+        <typeAlias alias="company" type="com.qianzhan.qichamao.entity.OrgCompanyList"></typeAlias>
+        <typeAlias type="com.qianzhan.qichamao.entity.RetrieveRange" alias="range"></typeAlias>
+    </typeAliases>
+    <!-- 数据库环境 -->
+    <environments default="com">
+        <environment id="com">
+            <!-- 使用JDBC的事务管理 -->
+            <transactionManager type="JDBC" />
+            <dataSource type="POOLED">
+                <!-- MySQL数据库驱动 -->
+                <property name="driver" value="${mssql.driver}" />
+                <!-- 连接数据库的URL -->
+                <property name="url"
+                          value="${mssql.com.url}" />
+                <property name="username" value="${mssql.com.user}" />
+                <property name="password" value="${mssql.com.pass}" />
+            </dataSource>
+        </environment>
+        <environment id="gsxt">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <property name="driver" value="${mssql.driver}" />
+                <property name="url" value="${mssql.gsxt.url}" />
+                <property name="username" value="${mssql.gsxt.user}"/>
+                <property name="password" value="${mssql.gsxt.pass}"/>
+            </dataSource>
+        </environment>
+        <environment id="ext">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <property name="driver" value="${mssql.driver}"/>
+                <property name="url" value="${mssql.ext.url}"/>
+                <property name="username" value="${mssql.ext.user}"/>
+                <property name="password" value="${mssql.ext.pass}"/>
+            </dataSource>
+        </environment>
+        <environment id="extension">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <property name="driver" value="${mssql.driver}"/>
+                <property name="url" value="${mssql.extension.url}"/>
+                <property name="username" value="${mssql.extension.user}"/>
+                <property name="password" value="${mssql.extension.pass}"/>
+            </dataSource>
+        </environment>
+        <environment id="brand">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <property name="driver" value="${mssql.driver}"/>
+                <property name="url" value="${mssql.brand.url}"/>
+                <property name="username" value="${mssql.brand.user}"/>
+                <property name="password" value="${mssql.brand.pass}"/>
+            </dataSource>
+        </environment>
+        <environment id="app">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <property name="driver" value="${mssql.jtds.driver}"/>
+                <property name="url" value="${mssql.app.url}"/>
+                <property name="username" value="${mssql.app.user}"/>
+                <property name="password" value="${mssql.app.pass}"/>
+            </dataSource>
+        </environment>
+        <environment id="property">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <property name="driver" value="${mssql.driver}"/>
+                <property name="url" value="${mssql.property.url}"/>
+                <property name="username" value="${mssql.property.user}"/>
+                <property name="password" value="${mssql.property.pass}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <!-- 将mapper文件加入到配置文件中 -->
+    <mappers>
+        <mapper resource="ComMapper.xml" />
+        <mapper resource="CommonMapper.xml" />
+    </mappers>
+</configuration>

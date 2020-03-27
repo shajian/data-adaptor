@@ -1,0 +1,12 @@
+company:
+  shards: 5
+  replicas: 0
+  analyzers:
+    sep: pattern [-\.\|,\s]
+#    std: standard 1
+  aggs:
+    oc_status: term
+    oc_type: term
+    register_money: range 50 100 500 1000 5000
+    establish_date: date_histogram year 2000-01-01 now
+  shields: ["公司", "有限公司"]
