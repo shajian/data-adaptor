@@ -9,12 +9,14 @@ import com.qianzhan.qichamao.util.MiscellanyUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EsComTag extends EsComBase {
+public class ComTag extends ComBase {
+    public ComTag(String key) {
+        super(key);
+    }
     @Override
     public Boolean call() throws Exception {
-//        if (EsConfigBus.getTaskConfigBool("local")) return true;
-        if (getCompany() != null) {
-            EsCompany c = getCompany();
+        if (compack.e_com != null) {
+            EsCompany c = compack.e_com;
             List<OrgCompanyTag> tags = MybatisClient.getCompanyTags(c.getOc_code());
             List<String> unweighted_tags = new ArrayList<>();
             TopNCollection<OrgCompanyTag> coll = new TopNCollection(3, OrgCompanyTag.comparator);

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+JAVA_OPTS="-Xms1024m -Xmx1024m"
+
 bindir=$(cd `dirname $0`; pwd)
 
 root=$(dirname ${bindir})
@@ -41,7 +43,7 @@ fi
 
 if [ $# -gt 0 ]; then
 # echo $1
-  java -jar ${name} $1
+  java ${JAVA_OPTS} -jar ${name} $1
 else
-  java -jar ${name}
+  java ${JAVA_OPTS} -jar ${name}
 fi

@@ -1,0 +1,6 @@
+state=1
+
+# refer to task.com.TaskType for task numbers
+tasks=8,4
+# indicates the key, and `tasks` item with regards to this key depends the kind of ComPack
+tasks_key=redis-arango

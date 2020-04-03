@@ -1,6 +1,7 @@
 package com.qianzhan.qichamao.app;
 
 import com.qianzhan.qichamao.task.com.EsCompanyWriter;
+import com.qianzhan.qichamao.task.com.RedisCompanyIndexWriter;
 import com.qianzhan.qichamao.task.stat.BrowseCount;
 
 public class Some {
@@ -17,7 +18,11 @@ public class Some {
                 BrowseCount.start();
             } else if (taskNo == 2) {
                 System.out.println("writing data into elasticsearch + mongodb...");
-                EsCompanyWriter.start();
+                EsCompanyWriter writer = new EsCompanyWriter();
+                writer.start();
+            } else if (taskNo == 3) {
+                RedisCompanyIndexWriter writer = new RedisCompanyIndexWriter();
+                writer.start();
             }
             System.out.println("game f**king over");
         } catch (NumberFormatException e) {
@@ -32,6 +37,7 @@ public class Some {
         String format = "start-some.%s [taskno] [--help]\n===============\ntaskno can be:\n\t" +
                 "1 - browsing count statistics\n\t" +
                 "2 - elasticsearch + mongodb data writing\n" +
+                "3 - redis company indexing\n" +
                 "------------------\n use sh start-some.sh instead of start-some.sh in linux \n\t" +
                 "if error 'bash: start-some.sh: Permission denied' pops out.";
         if (os.contains("linux")) {

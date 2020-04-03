@@ -51,4 +51,13 @@ public class BaseConfigBus {
         if (r == null) return def;
         return Float.parseFloat(r);
     }
+
+    public int[] getInts(String key) throws Exception {
+        String[] rs = getString(key).split(",");
+        int[] ints = new int[rs.length];
+        for (int i = 0; i < rs.length; ++i) {
+            ints[i] = Integer.parseInt(rs[i]);
+        }
+        return  ints;
+    }
 }

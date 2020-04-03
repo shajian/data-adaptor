@@ -14,7 +14,7 @@ public class MongoCompany {
     private String oc_name;
     private String oc_area;
 
-    private Date establish_date;
+//    private Date establish_date;
     private String oc_logo;
     private String oc_money;
 

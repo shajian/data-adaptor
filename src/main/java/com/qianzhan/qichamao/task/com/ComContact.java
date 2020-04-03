@@ -9,12 +9,15 @@ import com.qianzhan.qichamao.util.MiscellanyUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EsComContact extends EsComBase {
+public class ComContact extends ComBase {
+    public ComContact(String key) {
+        super(key);
+    }
 
     @Override
     public Boolean call() {
-        if (getCompany() != null) {
-            EsCompany c = getCompany();
+        if (compack.e_com != null) {
+            EsCompany c = compack.e_com;
             List<String> m_phones = new ArrayList<>();
             List<String> f_phones = new ArrayList<>();
             List<String> mails = new ArrayList<>();
@@ -32,9 +35,7 @@ public class EsComContact extends EsComBase {
             c.setFix_phones(f_phones);
             c.setMails(mails);
         }
-        if (getComstat() != null) {
-            EsComStat s = getComstat();
-        }
+
         return true;
     }
 }

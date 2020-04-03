@@ -7,11 +7,19 @@ import com.qianzhan.qichamao.task.stat.BrowseCount;
 import com.qianzhan.qichamao.task.stat.CompanyStatisticsInfo;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 
-public class EsComScore extends EsComBase {
+public class ComScore extends ComBase {
+    public ComScore(String key) {
+        super(key);
+    }
+
+    public ComScore(ComPack cp) {
+        super(cp);
+    }
+
     @Override
     public Boolean call() throws Exception {
-        if (getCompany() != null) {
-            EsCompany c = getCompany();
+        if (compack.e_com != null) {
+            EsCompany c = compack.e_com;
             OrgCompanyStatisticsInfo info = MybatisClient.getCompanyStatisticsInfo(c.getOc_code());
             int count = MybatisClient.getBrowseCount(c.getOc_code());
             int score = 0;

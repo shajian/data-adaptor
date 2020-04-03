@@ -5,7 +5,7 @@ import com.qianzhan.qichamao.util.MiscellanyUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EsComUtil {
+public class ComUtil {
     public static byte getCompanyStatus(String ext) {
         if (MiscellanyUtil.isBlank(ext)) return 0;  // unknown
         if (ext.contains("存续")) return 2;

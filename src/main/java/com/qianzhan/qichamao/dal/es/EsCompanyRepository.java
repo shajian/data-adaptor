@@ -130,12 +130,12 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
                         }
                         FilterAggregationBuilder filter = AggregationBuilders.filter(field, rangeBuilder)
                                 .subAggregation(AggregationBuilders.dateHistogram(field)
-                                        .calendarInterval(dh.getInterval()));
+                                        .dateHistogramInterval(dh.getInterval()));
                         builder.aggregation(filter);
                     }
                     else {
                         DateHistogramAggregationBuilder date = AggregationBuilders.dateHistogram(field)
-                                .calendarInterval(dh.getInterval());
+                                .dateHistogramInterval(dh.getInterval());
                         builder.aggregation(date);
 
                     }

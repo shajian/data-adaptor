@@ -7,11 +7,14 @@ import com.qianzhan.qichamao.entity.EsCompany;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EsComOldName extends EsComBase {
+public class ComOldName extends ComBase {
+    public ComOldName(String key) {
+        super(key);
+    }
     @Override
     public Boolean call() {
-        if (getCompany() != null) {
-            EsCompany c = getCompany();
+        if (compack.e_com != null) {
+            EsCompany c = compack.e_com;
             List<String> names = new ArrayList<>();
             for (String n : MybatisClient.getCompanyOldNames(c.getOc_code())) {
                 if (EsCompanyWriter.filter_out(n)) continue;
@@ -19,10 +22,6 @@ public class EsComOldName extends EsComBase {
                 names.add(n);
             }
             c.setOld_names(names);
-        }
-        if (getComstat() != null) {
-            EsComStat s = getComstat();
-
         }
         return true;
     }

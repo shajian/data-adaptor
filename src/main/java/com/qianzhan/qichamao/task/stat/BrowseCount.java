@@ -19,7 +19,7 @@ import java.util.Map;
 public class BrowseCount {
 
     private static int checkpoint;
-    private static final String checkpointName = "data-adaptor.browse_count";
+    private static final String checkpointName = "data-adaptor.mssql.browse_count";
     private static BaseConfigBus config;
     private static int batch;
     private static Map<String, Integer> buffer = new HashMap<>();

@@ -183,12 +183,12 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
                     }
                     FilterAggregationBuilder filter = AggregationBuilders.filter(field, rangeBuilder)
                             .subAggregation(AggregationBuilders.dateHistogram(field)
-                                    .calendarInterval(dh.getInterval()));
+                                    .dateHistogramInterval(dh.getInterval()));
                     list.add(filter);
                 }
                 else {
                     DateHistogramAggregationBuilder date = AggregationBuilders.dateHistogram(field)
-                            .calendarInterval(dh.getInterval());
+                            .dateHistogramInterval(dh.getInterval());
                     list.add(date);
                 }
             }

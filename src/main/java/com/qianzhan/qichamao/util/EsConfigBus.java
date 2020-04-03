@@ -59,32 +59,32 @@ public class EsConfigBus {
         return null;
     }
 
-    public static String getTaskConfigString(String key) throws IOException {
-        //
-        if (taskConfig == null) {
-            taskConfig = new HashMap<>();
-            Properties p = new Properties();
-            FileInputStream fis = new FileInputStream("config/EsCompany.txt");
-            InputStreamReader reader = new InputStreamReader(fis, "utf-8");
-            p.load(reader);
-
-            reader.close();
-            fis.close();
-            for (String name : p.stringPropertyNames()) {
-                taskConfig.put(name, p.getProperty(name));
-            }
-        }
-        return taskConfig.get(key);
-    }
-
-    public static boolean getTaskConfigBool(String key) throws IOException {
-        String result = getTaskConfigString(key);
-        if ("true".equals(result)) return true;
-        return false;
-    }
-
-    public static int getTaskConfigInt(String key) throws Exception {
-        String result = getTaskConfigString(key);
-        return Integer.parseInt(result);
-    }
+//    public static String getTaskConfigString(String key) throws IOException {
+//        //
+//        if (taskConfig == null) {
+//            taskConfig = new HashMap<>();
+//            Properties p = new Properties();
+//            FileInputStream fis = new FileInputStream("config/EsCompany.txt");
+//            InputStreamReader reader = new InputStreamReader(fis, "utf-8");
+//            p.load(reader);
+//
+//            reader.close();
+//            fis.close();
+//            for (String name : p.stringPropertyNames()) {
+//                taskConfig.put(name, p.getProperty(name));
+//            }
+//        }
+//        return taskConfig.get(key);
+//    }
+//
+//    public static boolean getTaskConfigBool(String key) throws IOException {
+//        String result = getTaskConfigString(key);
+//        if ("true".equals(result)) return true;
+//        return false;
+//    }
+//
+//    public static int getTaskConfigInt(String key) throws Exception {
+//        String result = getTaskConfigString(key);
+//        return Integer.parseInt(result);
+//    }
 }

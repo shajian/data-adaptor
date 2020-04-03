@@ -42,6 +42,7 @@ public class EsBaseRepository<T> {
     protected Class<T> clazz;
     @Getter
     protected EsIndexMeta indexMeta;
+
     public EsBaseRepository() {
 
         client = EsClient.getClient();
@@ -215,7 +216,7 @@ public class EsBaseRepository<T> {
     public void partialUpdate(Map map) {
         String id = (String) map.remove(indexMeta.id());
         if (map.size() > 0) {
-            UpdateRequest request = new UpdateRequest(indexMeta.index(), id).doc(map);
+            UpdateRequest request = new UpdateRequest(indexMeta.index(), indexMeta.type(), id).doc(map);
             request.docAsUpsert(false); // explicitly turn off upsert
             try {
                 UpdateResponse resp = client.update(request, RequestOptions.DEFAULT);
@@ -262,7 +263,7 @@ public class EsBaseRepository<T> {
             String id = (String) map.remove(indexMeta.id());
             if (id == null) continue;
             flag = false;
-            request.add(new UpdateRequest(indexMeta.index(), id).doc(map).docAsUpsert(false));
+            request.add(new UpdateRequest(indexMeta.index(), indexMeta.type(), id).doc(map).docAsUpsert(false));
         }
         if (flag) return;
         try {
@@ -282,7 +283,7 @@ public class EsBaseRepository<T> {
     }
 
     public void delete(String id) {
-        DeleteRequest request = new DeleteRequest(indexMeta.index(), id);
+        DeleteRequest request = new DeleteRequest(indexMeta.index(), indexMeta.type(), id);
         try {
             DeleteResponse resp = client.delete(request, RequestOptions.DEFAULT);
             long version = resp.getVersion();
@@ -300,7 +301,7 @@ public class EsBaseRepository<T> {
     public void delete(List<String> ids) {
         BulkRequest request = new BulkRequest();
         for (String id : ids) {
-            request.add(new DeleteRequest(indexMeta.index(), id));
+            request.add(new DeleteRequest(indexMeta.index(), indexMeta.type(), id));
         }
         try {
             BulkResponse resp = client.bulk(request, RequestOptions.DEFAULT);
@@ -324,7 +325,7 @@ public class EsBaseRepository<T> {
     }
 
     public boolean exists(String id) {
-        GetRequest request = new GetRequest(indexMeta.index(), id);
+        GetRequest request = new GetRequest(indexMeta.index(), indexMeta.type(), id);
         request.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
         try {
             return client.exists(request, RequestOptions.DEFAULT);
@@ -348,7 +349,7 @@ public class EsBaseRepository<T> {
 
     public T get(EsBaseInput<T> input) {
         Asserts.notNull(input.getId(), "must set id for EsQueryInput when call `get` in EsBaseRepository");
-        GetRequest request = new GetRequest(indexMeta.index(), input.getId());
+        GetRequest request = new GetRequest(indexMeta.index(), indexMeta.type(), input.getId());
         Asserts.check(input.isSrc_flag(), "must turn `src_flag` for class `EsQueryInput` in action 'get'");
 
         if ((input.getSrc_inc() != null && input.getSrc_inc().length > 0) ||
@@ -382,8 +383,9 @@ public class EsBaseRepository<T> {
             ctx = new FetchSourceContext(true, includes, excludes);
         }
         String index = indexMeta.index();
+        String type = indexMeta.type();
         for (String id : input.getIds()) {;
-            MultiGetRequest.Item item = new MultiGetRequest.Item(index, id);
+            MultiGetRequest.Item item = new MultiGetRequest.Item(index, type, id);
             if (ctx != null)
                 item.fetchSourceContext(ctx);
             request.add(item);

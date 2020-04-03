@@ -6,8 +6,9 @@ import com.qianzhan.qichamao.util.DynamicUtil;
 import java.io.IOException;
 
 public class EsMongoWriter {
-    public static void main(String[] args) {
-        EsCompanyWriter.start();
+    public static void main(String[] args) throws Exception {
+        EsCompanyWriter writer = new EsCompanyWriter();
+        writer.start();
         System.out.println("game f**king over");
     }
 

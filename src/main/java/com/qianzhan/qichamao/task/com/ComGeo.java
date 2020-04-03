@@ -6,17 +6,17 @@ import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.entity.EsGeoPoint;
 import com.qianzhan.qichamao.entity.OrgCompanyGeo;
 
-public class EsComGeo extends EsComBase {
+public class ComGeo extends ComBase {
+    public ComGeo(String key) {
+        super(key);
+    }
     @Override
     public Boolean call() throws Exception {
-        if (getCompany() != null) {
-            EsCompany c = getCompany();
+        if (compack.e_com != null) {
+            EsCompany c = compack.e_com;
             OrgCompanyGeo geo = MybatisClient.getCompanyGeo(c.getOc_code());
             if (geo != null)
                 c.setCoordinate(new EsGeoPoint() {{setLat(geo.latitude);setLon(geo.longitude);}});
-        }
-        if (getComstat() != null) {
-            EsComStat s = getComstat();
         }
         return true;
     }

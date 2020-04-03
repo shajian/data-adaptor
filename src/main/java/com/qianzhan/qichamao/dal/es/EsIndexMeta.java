@@ -8,5 +8,5 @@ import java.lang.annotation.*;
 public @interface EsIndexMeta {
     String index();
     String id();
-
+    String type() default "_doc";
 }

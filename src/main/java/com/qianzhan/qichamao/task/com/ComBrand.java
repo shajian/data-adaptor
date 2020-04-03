@@ -8,13 +8,18 @@ import com.qianzhan.qichamao.util.MiscellanyUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EsComBrand extends EsComBase {
+public class ComBrand extends ComBase {
+
+    private boolean tbl_tail;
+    public ComBrand(String key) {
+        super(key);
+    }
 
     @Override
     public Boolean call() throws Exception {
-        String tail = EsConfigBus.getTaskConfigBool("local") ? "_temp" : "";
-        if (getCompany() != null) {
-            EsCompany c = getCompany();
+        String tail = SharedData.getConfig(tasks_key).getBool("local") ? "_temp" : "";
+        if (compack.e_com != null) {
+            EsCompany c = compack.e_com;
             List<String> brands = new ArrayList<>();
             for (String name : MybatisClient.getCompanyBrands(c.getOc_code(), tail)) {
                 if (MiscellanyUtil.isBlank(name)) continue;
