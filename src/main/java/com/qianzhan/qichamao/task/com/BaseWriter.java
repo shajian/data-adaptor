@@ -15,7 +15,8 @@ public abstract class BaseWriter {
     protected String tasks_key;
     protected List<ComHook> preHooks;
     protected List<ComHook> postHooks;
-    protected int tasktype = 0;
+    protected int[] tasks;
+    protected int batch;
     /**
      * 1. launch task from original point
      * 2. launch task for update
@@ -24,13 +25,12 @@ public abstract class BaseWriter {
 
     public BaseWriter(String file) throws Exception {
         config = new BaseConfigBus(file);
+        batch = config.getInt("batch", 1000);
         state = config.getInt("state", 1);
         tasks_key = config.getString("tasks_key");
-        int[] tasks = config.getInts("tasks");
-        for (int task : tasks) {
-            tasktype |= task;
-        }
-        ComPack.registerTasktype(config.getString("tasks_key"), tasktype);
+        tasks = config.getInts("tasks");
+
+        ComPack.registerTasktype(config.getString("tasks_key"), tasks);
     }
 
     public void start() {

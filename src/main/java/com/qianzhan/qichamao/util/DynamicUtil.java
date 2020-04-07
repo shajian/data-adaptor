@@ -49,4 +49,16 @@ public class DynamicUtil {
             return false;
         }
     }
+
+    public static void testLoadJar() {
+        System.out.println("=========class path: "+System.getProperty("java.class.path"));
+        boolean r1 = DynamicUtil.loadJar("elasticsearch-7.6.0.jar");
+        if (r1) {
+            System.out.println("=========== successed to load elasticsearch-7.6.0.jar");
+            boolean r2 = DynamicUtil.loadClass("org.elasticsearch.index.query.QueryBuilder");
+            System.out.println(String.format("========= load QueryBuilder: %b", r2));
+        } else {
+            System.out.println("======== failed to load jar: elasticsearch-7.6.0.jar");
+        }
+    }
 }

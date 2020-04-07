@@ -85,11 +85,15 @@ public class BrowseCount {
         int i = 0;
         for (String key : buffer.keySet()) {
             int old = MybatisClient.getBrowseCount(key);
-            if (old < 0) {
-                MybatisClient.insertBrowseCount(key, buffer.get(key));
-            } else {
-                MybatisClient.updateCheckpoint(key, buffer.get(key)+old);
+            int cur = buffer.getOrDefault(key, 0);
+            if (cur > 0) {
+                if (old < 0) {
+                    MybatisClient.insertBrowseCount(key, cur);
+                } else {
+                    MybatisClient.updateBrowseCount(key, cur+old);
+                }
             }
+
             i++;
             if (i % 1000 == 0) {
                 System.out.println("1000 items have been save into database @ "+new Date().toString());

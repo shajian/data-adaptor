@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
  */
 public class EsCompanyWriter extends BaseWriter {
     private EsCompanyRepository repository;
-    private int batchsize = 1000;
 
     private static Pattern[] filter_outs;
 
@@ -46,7 +45,6 @@ public class EsCompanyWriter extends BaseWriter {
         for (int i = 0; i < filter_outs_str.length; ++i) {
             filter_outs[i] = Pattern.compile(String.format("^%s$", filter_outs_str[i]));
         }
-        batchsize = config.getInt("batch", 1000);
         thread_queue_size_ratio = config.getInt("thread_queue_size_ratio", 5);
         thread_active_threshold_ratio = config.getInt("thread_active_threshold_ratio", 2);
         max_threads = config.getInt("max_threads", 0);
@@ -82,17 +80,19 @@ public class EsCompanyWriter extends BaseWriter {
         preHooks.add(() -> SharedData.openBatch(tasks_key));
 
         postHooks = new ArrayList<>();
-        if ((tasktype & TaskType.mongo.getValue()) != 0) {
-            postHooks.add(() -> MongodbCompanyWriter.write2Db(tasks_key));
-        }
-        if ((tasktype & TaskType.arango.getValue()) != 0) {
-            postHooks.add(() -> ArangodbCompanyWriter.upsert(tasks_key));
+        for (int task : tasks) {
+            if ((task & TaskType.mongo.getValue()) != 0) {
+                postHooks.add(() -> MongodbCompanyWriter.write2Db(tasks_key));
+            }
+            if ((task & TaskType.arango.getValue()) != 0) {
+                postHooks.add(() -> ArangodbCompanyWriter.upsert(tasks_key));
+            }
         }
         postHooks.add(() -> SharedData.closeBatch(tasks_key));
     }
 
     private boolean createInner() throws Exception{
-        List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batchsize);
+        List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;    // task finishes !!!
 
         int running = 0;

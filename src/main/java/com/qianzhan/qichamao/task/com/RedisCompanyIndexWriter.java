@@ -19,7 +19,7 @@ public class RedisCompanyIndexWriter extends BaseWriter {
     private int pDbIndex;
     private int nDbIndex;
     public RedisCompanyIndexWriter() throws Exception {
-        super("config/RedisComIndex.txt");
+        super("config/RedisCompanyIndex.txt");
         checkpointName = "data-adaptor.redis.company";
         init();
     }
@@ -39,8 +39,10 @@ public class RedisCompanyIndexWriter extends BaseWriter {
         preHooks.add(() -> SharedData.openBatch(tasks_key));
 
         postHooks = new ArrayList<>();
-        if ((tasktype & TaskType.arango.getValue()) != 0) {
-            ArangodbCompanyWriter.bulkInsert(tasks_key);
+        for (int task : tasks) {
+            if ((task & TaskType.arango.getValue()) != 0) {
+                ArangodbCompanyWriter.bulkInsert(tasks_key);
+            }
         }
         postHooks.add(() -> SharedData.closeBatch(tasks_key));
     }

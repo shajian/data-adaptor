@@ -2,6 +2,7 @@
 log/
 lib/
 .idea/
+**/.vscode/
 target/
 out/
 

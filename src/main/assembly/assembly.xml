@@ -2,13 +2,17 @@
 <assembly>
     <id>analysis-hanlp-release</id>
     <formats>
-        <format>tar.gz</format>
+        <format>zip</format>
     </formats>
 <!--    <includeBaseDirectory>false</includeBaseDirectory>-->
     <fileSets>
         <fileSet>
             <directory>${project.basedir}/config</directory>
             <outputDirectory>/config</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/lib</directory>
+            <outputDirectory>/lib</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>${project.basedir>/bin</directory>

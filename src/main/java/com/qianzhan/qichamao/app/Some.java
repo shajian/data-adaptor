@@ -36,7 +36,7 @@ public class Some {
         String os = System.getProperty("os.name").toLowerCase();
         String format = "start-some.%s [taskno] [--help]\n===============\ntaskno can be:\n\t" +
                 "1 - browsing count statistics\n\t" +
-                "2 - elasticsearch + mongodb data writing\n" +
+                "2 - elasticsearch + mongodb data writing\n\t" +
                 "3 - redis company indexing\n" +
                 "------------------\n use sh start-some.sh instead of start-some.sh in linux \n\t" +
                 "if error 'bash: start-some.sh: Permission denied' pops out.";
