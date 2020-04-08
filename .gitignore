@@ -1,6 +1,7 @@
 # ignore `log` dir, and its subdirectory and files
 log/
 lib/
+tmp/
 .idea/
 **/.vscode/
 target/

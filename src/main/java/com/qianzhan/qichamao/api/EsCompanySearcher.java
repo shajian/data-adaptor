@@ -4,22 +4,24 @@ import com.qianzhan.qichamao.dal.es.EsCompanyInput;
 import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
 import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.entity.EsCompanyMatch;
+import com.qianzhan.qichamao.entity.EsCompanyTripleMatch;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class Company {
+public class EsCompanySearcher {
     /**
      *
      * @param name full/part name of company.
      * @return
      * @throws Exception
      */
-    public static EsCompanyMatch name2code(String name) throws Exception {
+    public static EsCompanyTripleMatch name2code(String name) throws Exception {
         EsCompanyRepository es = new EsCompanyRepository();
         EsCompanyInput input = new EsCompanyInput();
         input.setKeyword(name);
@@ -35,9 +37,9 @@ public class Company {
         return parse(name, resp);
     }
 
-    public static EsCompanyMatch[] names2codes(String[] names) throws Exception {
+    public static EsCompanyTripleMatch[] name2code(String[] names) throws Exception {
         EsCompanyRepository es = new EsCompanyRepository();
-        EsCompanyMatch[] matches = new EsCompanyMatch[names.length];
+        EsCompanyTripleMatch[] matches = new EsCompanyTripleMatch[names.length];
         EsCompanyInput[] inputs = new EsCompanyInput[names.length];
         for (int i = 0; i < names.length; ++i) {
             EsCompanyInput input = new EsCompanyInput();
@@ -57,7 +59,7 @@ public class Company {
         return matches;
     }
 
-    public static String[] fullNames2codes(String[] names) throws Exception {
+    public static String[] fname2code(String[] names) throws Exception {
         EsCompanyInput input = new EsCompanyInput();
         input.setField("oc_name.key");
         input.setIds(names);
@@ -73,8 +75,11 @@ public class Company {
         for (SearchHit hit : resp.getHits().getHits()) {
             Map<String, Object> m = hit.getSourceAsMap();
             String name = (String) m.get("oc_name");
-            if (!MiscellanyUtil.isBlank(name))
-                map.put(name, (String) m.get("oc_code"));
+            if (!MiscellanyUtil.isBlank(name)) {
+                String old = map.getOrDefault(name, null);
+                if (old != null) map.put(name, String.format("%s,%s", old, m.get("oc_code")));
+                else map.put(name, (String) m.get("oc_code"));
+            }
         }
         for (int i = 0; i < names.length; ++i) {
             codes[i] = map.get(names[i]);
@@ -82,19 +87,30 @@ public class Company {
         return codes;
     }
 
-    private static EsCompanyMatch parse(String name, SearchResponse resp) throws Exception {
+    private static EsCompanyTripleMatch parse(String name, SearchResponse resp) throws Exception {
         int min = name.length();
-        EsCompanyMatch m = new EsCompanyMatch() {{ setCom(new EsCompany()); }};
+        EsCompanyTripleMatch m = new EsCompanyTripleMatch();
         for (SearchHit hit : resp.getHits().getHits()) {
             Map map = hit.getSourceAsMap();
             String dname = (String)map.get("oc_name");
-            int distance = MiscellanyUtil.getEditDistanceSafe(dname, name);
-            if (distance < min) {
-                m.getCom().setOc_name((String)map.get("oc_code"));
-                m.getCom().setOc_name(dname);
-                min = distance;
-                if (min == 0) break;
-            }
+
+
+            m.setOc_code((String)map.get("oc_code"));
+            m.setOc_area((String)map.get("oc_area"));
+            m.setOc_name(dname);
+            min = MiscellanyUtil.getEditDistanceSafe(dname, name);
+            break;
+
+
+//            int distance = MiscellanyUtil.getEditDistanceSafe(dname, name);
+//            if (distance < min) {
+//                m.setOc_code((String)map.get("oc_code"));
+//                m.setOc_area((String)map.get("oc_area"));
+//                m.setOc_name(dname);
+//                min = distance;
+//                if (min == 0) break;
+//            }
+
         }
         m.setConfidence(1.0f-((float)min)/name.length());
         return m;

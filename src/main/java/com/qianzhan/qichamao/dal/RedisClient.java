@@ -17,8 +17,7 @@ public class RedisClient implements AutoCloseable {
 
     private static Map<Integer, Jedis> map = new HashMap<>();
 
-    @Getter@Setter
-    private static int dbIndex = 1;
+    public static int reverseIndexDb;
     @Getter
     private Jedis jedis = null;
 
@@ -27,6 +26,7 @@ public class RedisClient implements AutoCloseable {
             String host = DbConfigBus.getDbConfig_s("redis.host", "");
             int port = DbConfigBus.getDbConfig_i("redis.port", -1);
             String pwd = DbConfigBus.getDbConfig_s("redis.pass", "");
+            reverseIndexDb = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
             JedisPoolConfig config = new JedisPoolConfig();
             config.setMaxTotal(1000);
             config.setMaxIdle(100);
@@ -46,7 +46,17 @@ public class RedisClient implements AutoCloseable {
             map.put(dbIndex, client);
         }
     }
-    public static Jedis get(Integer dbIndex) { return map.get(dbIndex); }
+
+    public static Jedis get(Integer dbIndex) {
+        if (!map.containsKey(dbIndex)) {
+            Jedis client = pool.getResource();
+            client.select(dbIndex);
+            map.put(dbIndex, client);
+            return client;
+        }
+        return map.get(dbIndex);
+    }
+
     public static void unregisterClient(Integer dbIndex) {
         if (map.containsKey(dbIndex)) {
             Jedis client = map.get(dbIndex);
@@ -54,11 +64,6 @@ public class RedisClient implements AutoCloseable {
         }
     }
 
-    public RedisClient() {
-        jedis = pool.getResource();
-        if (dbIndex>0)
-            jedis.select(dbIndex);
-    }
 
     public void close() {
         try {

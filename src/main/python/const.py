@@ -1,0 +1,5 @@
+ROOT_URL            =''
+COMPANY_SEARCH      ='company/search'
+COMPANY_MGET        ='company/mget'
+COMPANY_FNAME2CODE  ='company/fname2code'
+COMPANY_NAME2CODE   ='company/name2code'

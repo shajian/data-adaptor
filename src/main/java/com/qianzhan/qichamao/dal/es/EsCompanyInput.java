@@ -13,6 +13,14 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 public class EsCompanyInput extends EsBaseInput<EsCompany> {
+    /**
+     * searching version
+     * this field has a format of 'xxxx-xx-xx', means year-month-day
+     */
+    @Setter@Getter
+    private String version;
+
+
     public EsCompanyInput() {
         super();
     }

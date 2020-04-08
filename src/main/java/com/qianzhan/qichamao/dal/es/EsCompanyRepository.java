@@ -32,6 +32,14 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
+    private static EsCompanyRepository repository;
+    public static EsCompanyRepository singleton() {
+        if (repository == null) {
+            repository = new EsCompanyRepository();
+        }
+        return repository;
+    }
+
     public EsCompanyRepository() {
         super();
     }
@@ -397,8 +405,8 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
     public SearchResponse multiSearch(EsCompanyInput input) throws Exception {
         SearchRequest request = new SearchRequest();
         SearchSourceBuilder builder = new SearchSourceBuilder();
-        builder.size(input.getIds().length*2);
-        builder.query(QueryBuilders.termsQuery(input.getField(), input.getId()));
+        builder.size(input.getIds().length*3);
+        builder.query(QueryBuilders.termsQuery(input.getField(), input.getIds()));
         builder.sort("_doc");
         if (input.getTimeOut() > 0) {
             builder.timeout(new TimeValue(input.getTimeOut(), TimeUnit.SECONDS));

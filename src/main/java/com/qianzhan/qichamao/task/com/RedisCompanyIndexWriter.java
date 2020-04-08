@@ -14,7 +14,7 @@ import java.util.List;
 
 public class RedisCompanyIndexWriter extends BaseWriter {
 
-    private Jedis predis;   // code -> name
+//    private Jedis predis;   // code -> name
     private Jedis nredis;   // name -> code
     private int pDbIndex;
     private int nDbIndex;
@@ -25,7 +25,7 @@ public class RedisCompanyIndexWriter extends BaseWriter {
     }
 
     private void init() {
-        pDbIndex = DbConfigBus.getDbConfig_i("redis.db.positive", 1);
+//        pDbIndex = DbConfigBus.getDbConfig_i("redis.db.positive", 1);
         nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
 //        RedisClient.registerClient(pDbIndex);
         RedisClient.registerClient(nDbIndex);
@@ -111,9 +111,9 @@ public class RedisCompanyIndexWriter extends BaseWriter {
 
     //============= provides some intrusive interface =============
 
-    public void setCodenames(List<String> codenames) {
-        predis.mset(codenames.toArray(new String[codenames.size()]));
-    }
+//    public void setCodenames(List<String> codenames) {
+//        predis.mset(codenames.toArray(new String[codenames.size()]));
+//    }
 
 //    /**
 //     *
