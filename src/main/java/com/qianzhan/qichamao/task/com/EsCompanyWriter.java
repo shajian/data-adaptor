@@ -35,7 +35,7 @@ public class EsCompanyWriter extends BaseWriter {
 
 
     public EsCompanyWriter() throws Exception {
-        super("");
+        super("config/EsCompany.txt");
         // initialize ES read/write components
         repository = new EsCompanyRepository();
         checkpointName = "data-adaptor.es."+repository.getIndexMeta().index();

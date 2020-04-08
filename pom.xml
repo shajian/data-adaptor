@@ -20,7 +20,7 @@
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
-        <project.mainClass>com.qianzhan.qichamao.app.Test</project.mainClass>
+        <project.mainClass>com.qianzhan.qichamao.app.Some</project.mainClass>
     </properties>
 
     <build>
@@ -75,10 +75,10 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.springframework.boot</groupId>-->
+<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
+<!--            </plugin>-->
         </plugins>
     </build>
 
@@ -120,7 +120,7 @@
         <dependency>
             <groupId>com.hankcs</groupId>
             <artifactId>hanlp</artifactId>
-            <version>${hanlp.version}</version>
+            <version>1.7.6</version>
             <systemPath>${pom.basedir}/lib/hanlp-1.7.6.jar</systemPath>
             <scope>system</scope>
             <exclusions>

@@ -1,14 +1,17 @@
 @echo off
 
-JAVA_OPTS="-Xms1024m -Xmx1024m"
+set JAVA_OPTS=-Xms1024m -Xmx1024m
 
 cd /d %~dp0
 cd ..
 SET root=%cd%
-SET libdir=%root\lib
+REM @echo %root%
+SET libdir=%root%\lib
+
+REM @echo %libdir%
 
 for /r %libdir% %%f in (data-adaptor*.jar) do (
-    SET file-%%f
+    SET file=%%f
     goto :end
 )
 

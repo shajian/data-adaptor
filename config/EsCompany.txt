@@ -15,7 +15,7 @@ thread_queue_size_ratio=5
 thread_active_threshold_ratio=2
 
 # batch size
-batch=100
+batch=1000
 
 # local or remote (dev or release)
 local=true
