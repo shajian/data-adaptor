@@ -24,35 +24,74 @@ public class ArangoComClient {
         client = ArangoClient.getClient();
     }
 
+    private static ArangoComClient singleton;
+    public static ArangoComClient getSingleton() {
+        if (singleton == null) {
+            singleton = new ArangoComClient();
+        }
+        return singleton;
+    }
+
     /**
      * initialize a graph
      * after creating a graph, two collections for vertex and edge are automatically created.
      */
-    public void initGraph() throws Exception {
-        ArangoDatabase db = client.db(dbName);
-        if (!db.exists()) {
-            client.createDatabase(dbName);
-            db = client.db(dbName);
-        }
+    public void initGraph() {
+        try {
+            ArangoDatabase db = client.db(dbName);
+            if (!db.exists()) {
+                client.createDatabase(dbName);
+                db = client.db(dbName);
+            }
 
-        ArangoGraph graph = db.graph(graphName);
-        if (!graph.exists()) {
-            EdgeDefinition ed = new EdgeDefinition().collection(edgeCollName)
-                    .from(vertexCollName).to(vertexCollName);
-            db.createGraph(graphName, Arrays.asList(ed));
-        }
+            ArangoGraph graph = db.graph(graphName);
+            if (!graph.exists()) {
+                EdgeDefinition ed = new EdgeDefinition().collection(edgeCollName)
+                        .from(vertexCollName).to(vertexCollName);
+                db.createGraph(graphName, Arrays.asList(ed));
+            }
 
-        // check
-        ArangoCollection vds = db.collection(vertexCollName);
-        if (!vds.exists()) {
-            throw new Exception("no vertex collection after creating a graph");
-        }
-        ArangoCollection eds = db.collection(edgeCollName);
-        if (!eds.exists()) {
-            throw new Exception("no edge collection after creating a graph");
+            // check
+            ArangoCollection vds = db.collection(vertexCollName);
+            ArangoCollection eds = db.collection(edgeCollName);
+            if (!vds.exists() || !eds.exists()) {
+                System.out.println("no vertex collection after creating a graph");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
+    /**
+     *
+     * @param coll 1 -> vertexCollName
+     *             2 -> edgeCollName
+     */
+    public void truncate(int coll) {
+        ArangoDatabase db = client.db(dbName);
+        if (db.exists()) {
+            String name = coll == 1 ? vertexCollName : edgeCollName;
+            ArangoCollection collection = db.collection(name);
+            if (collection.exists()) {
+                collection.truncate();
+            }
+        }
+    }
+
+    /**
+     * drop graph.
+     * @param dropCollections whether drop collections used in this graph. Note that if set to true,
+     *                        collections only used in this graph are dropped.
+     */
+    public void dropGraph(boolean dropCollections) {
+        ArangoDatabase db = client.db(dbName);
+        if (db.exists()) {
+            ArangoGraph graph = db.graph(graphName);
+            if (graph.exists()) {
+                graph.drop(dropCollections);
+            }
+        }
+    }
 
     public void bulkInsert_VD(List<BaseDocument> vds) {
         ArangoDatabase db = client.db(dbName);

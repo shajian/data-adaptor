@@ -6,4 +6,5 @@ public class OrgCompanyGsxtDtlGD {
     public String og_type;
     public double og_subscribeAccount;
     public double og_readAccount;
+    public byte og_status;
 }

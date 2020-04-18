@@ -17,11 +17,15 @@ public class CompanyStatisticsInfo {
         File file = new File("config/CompanyStatisticsInfo.bin");
         try {
             if (file.exists()) {
-                deSerialize(file);
-            } else {
-                loadFromDB();
-                serialize(file);
+                System.out.println("trying to load company statistics info from file");
+                if (deSerialize(file)) {
+                    return;
+                }
+                System.out.println("failed to load company statistics info from file");
             }
+            System.out.println("trying to load company statistics info from database");
+            loadFromDB();
+            serialize(file);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -47,7 +51,9 @@ public class CompanyStatisticsInfo {
         int end = loadInner(start);
         while (end > 0) {
             start = end;
-            System.out.println(String.format("checkpoint: %d @ %s", start, new Date().toString()));
+            System.out.println(String.format("%s-checkpoint: %d @ %s",
+                    Thread.currentThread().getStackTrace()[1].getClassName(),
+                    start, new Date().toString()));
             end = loadInner(start);
         }
 
@@ -57,7 +63,7 @@ public class CompanyStatisticsInfo {
     }
 
     private static int loadInner(int start) {
-        List<OrgCompanyStatisticsInfo> infos = MybatisClient.getCompanyStatisticsInfos(start, 8000);
+        List<OrgCompanyStatisticsInfo> infos = MybatisClient.getCompanyStatisticsInfos(start, 1000);
         int[][] counts = new int[histograms.length][infos.size()];
         for (int i = 0; i < infos.size(); ++i) {
             OrgCompanyStatisticsInfo info = infos.get(i);
@@ -91,26 +97,30 @@ public class CompanyStatisticsInfo {
             return 0;
     }
 
-    private static void deSerialize(File file) throws IOException {
+    private static boolean deSerialize(File file) throws IOException {
         histograms = new AdaFitHistogram[StatInfo.size.ordinal()];
         FileInputStream fis = new FileInputStream(file);
         try {
             byte[] bytes = new byte[4];
             fis.read(bytes);
             int total = MiscellanyUtil.bytes2int(bytes);
+            if (total == 0) return false;
             bytes = new byte[total];
             fis.read(bytes);
 
             int start = 0;
             for (int i = 0; i < histograms.length; ++i) {
+                histograms[i] = new AdaFitHistogram();
                 int length = histograms[i].deSerialize(bytes, start);
                 start += length;
             }
+            return true;
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             fis.close();
         }
+        return false;
     }
 
     private static void serialize(File file) throws IOException {

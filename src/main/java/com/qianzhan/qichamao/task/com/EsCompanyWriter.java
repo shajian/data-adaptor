@@ -24,12 +24,12 @@ import java.util.regex.Pattern;
 public class EsCompanyWriter extends BaseWriter {
     private EsCompanyRepository repository;
 
-    private static Pattern[] filter_outs;
 
-    private static CompletionService<Boolean> threadpool;
-    private static int max_threads;
-    private static int thread_queue_size_ratio;
-    private static int thread_active_threshold_ratio;
+    CountDownLatch latch = new CountDownLatch(3);
+//    private CompletionService<Boolean> threadpool;
+    private ThreadPoolExecutor pool;
+    private int max_threads;
+    private int thread_queue_size_ratio;
     private static final Logger logger = LoggerFactory.getLogger(EsCompanyWriter.class);
 
 
@@ -39,25 +39,18 @@ public class EsCompanyWriter extends BaseWriter {
         // initialize ES read/write components
         repository = new EsCompanyRepository();
         checkpointName = "data-adaptor.es."+repository.getIndexMeta().index();
-
-        String[] filter_outs_str = config.getString("filter_out").split("\\s");
-        filter_outs = new Pattern[filter_outs_str.length];
-        for (int i = 0; i < filter_outs_str.length; ++i) {
-            filter_outs[i] = Pattern.compile(String.format("^%s$", filter_outs_str[i]));
-        }
         thread_queue_size_ratio = config.getInt("thread_queue_size_ratio", 5);
-        thread_active_threshold_ratio = config.getInt("thread_active_threshold_ratio", 2);
         max_threads = config.getInt("max_threads", 0);
         if (max_threads <= 0) {
-            max_threads = Runtime.getRuntime().availableProcessors() * 4;
+            max_threads = Runtime.getRuntime().availableProcessors() * 15;
         }
-        BlockingQueue<Runnable> queue = new LinkedBlockingDeque<>(max_threads*thread_queue_size_ratio);
-        Executor executor = new ThreadPoolExecutor(max_threads, max_threads, 0, TimeUnit.SECONDS,
+        BlockingQueue<Runnable> queue = new LinkedBlockingDeque<>(thread_queue_size_ratio*batch);
+        pool = new ThreadPoolExecutor(max_threads, max_threads, 0, TimeUnit.SECONDS,
                 queue, new ThreadPoolExecutor.AbortPolicy());
-        threadpool = new ExecutorCompletionService<Boolean>(executor);
+//        threadpool = new ExecutorCompletionService(pool);
     }
 
-    private void preCreate() throws Exception {
+    protected void preCreate() throws Exception {
         // create ES index
         CompanyStatisticsInfo.initialize();
         BrowseCount.initialize();
@@ -91,13 +84,12 @@ public class EsCompanyWriter extends BaseWriter {
         postHooks.add(() -> SharedData.closeBatch(tasks_key));
     }
 
-    private boolean createInner() throws Exception{
+    protected boolean createInner() throws Exception{
         List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;    // task finishes !!!
 
-        int running = 0;
-        int success = 0;
-        int failure = 0;
+        ComBase.latch = new CountDownLatch(batch*9);
+        int count = 0;
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
             char codeTail = company.oc_code.charAt(8);
@@ -112,60 +104,39 @@ public class EsCompanyWriter extends BaseWriter {
             SharedData.open(tasks_key);
             ComPack cp = SharedData.get(tasks_key);
             cp.e_com.loadFrom(company);
+            if (cp.m_com != null) {
+                cp.m_com.loadFrom(company);
+            }
 
-            threadpool.submit(new ComDtl(tasks_key));
-            threadpool.submit(new ComMember(tasks_key));
-            threadpool.submit(new ComShareHolder(tasks_key));
+            pool.execute(new ComDtl(tasks_key));
+            pool.execute(new ComMember(tasks_key));
+            pool.execute(new ComShareHolder(tasks_key));
 
-            threadpool.submit(new ComContact(tasks_key));
-            threadpool.submit(new ComOldName(tasks_key));
-            threadpool.submit(new ComIndustry(tasks_key));
+            pool.execute(new ComContact(tasks_key));
+            pool.execute(new ComOldName(tasks_key));
+            pool.execute(new ComIndustry(tasks_key));
 
-            threadpool.submit(new ComGeo(tasks_key));
-            threadpool.submit(new ComBrand(tasks_key));
-            threadpool.submit(new ComTag(tasks_key));
+            pool.execute(new ComGeo(tasks_key));
+            pool.execute(new ComBrand(tasks_key));
+            pool.execute(new ComTag(tasks_key));
 
             SharedData.close(tasks_key);
-
-            running += 9;
-            while (running > max_threads*thread_active_threshold_ratio) {
-                Boolean b = threadpool.take().get();
-                if (b) success++;
-                else failure++;
-                running--;
-            }
-        }
-        while(running > 0) {
-            Boolean b = threadpool.take().get();
-            if (b) success++;
-            else failure++;
-            running--;
+            count += 1;
         }
 
+        int diff = (batch-count)*9;
+        while(ComBase.latch.getCount() != diff) {
+            Thread.sleep(2000);
+        }
+
+        ComBase.latch = new CountDownLatch(count);
         // set weight and score
         for (ComPack cp : SharedData.getBatch(tasks_key)) {
-            threadpool.submit(new ComScore(cp));
-            running++;
-            while (running > max_threads*thread_active_threshold_ratio) {
-                Boolean b = threadpool.take().get();
-                if (b) success++;
-                else failure++;
-                running--;
-            }
+            pool.execute(new ComScore(cp));
         }
 
-        // wait until all scores are calculated
-        while (running>0) {
-            Boolean b = threadpool.take().get();
-            if (b) success++;
-            else failure++;
-            running--;
-        }
+        ComBase.latch.await();
 
-
-
-        System.out.println(String.format("total sub-thread tasks: %d, success: %d, failure: %d",
-                6 * companies.size(), success, failure));
         System.out.println("writing into ES...");
 
         List<EsCompany> e_coms = new ArrayList<>();
@@ -174,15 +145,10 @@ public class EsCompanyWriter extends BaseWriter {
         }
         repository.index(e_coms);
 
-        MybatisClient.updateCheckpoint(checkpointName, checkpoint);
+
         return true;
     }
 
-    public static boolean filter_out(String name) {
-        for (Pattern pattern : filter_outs) {
-            Matcher matcher = pattern.matcher(name);
-            if (matcher.find()) return true;
-        }
-        return false;
+    public void close() {
     }
 }

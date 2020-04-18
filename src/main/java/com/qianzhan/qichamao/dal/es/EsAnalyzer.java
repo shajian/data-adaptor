@@ -5,6 +5,7 @@ public enum EsAnalyzer {
     hanlp_index("index"),
     hanlp_crf("crf"),
     hanlp_nlp("nlp"),
+    hanlp("smart"),
     sep_analyzer("sep"),
     keyword("key");
 

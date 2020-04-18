@@ -6,6 +6,7 @@ public class OrgCompanyTag {
     public String code;
     public String brandname;
     public int score;
+    public boolean isvalid;
 
     public static Comparator<OrgCompanyTag> comparator = new Comparator<OrgCompanyTag>() {
         @Override

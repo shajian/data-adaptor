@@ -17,7 +17,7 @@ public class ComScore extends ComBase {
     }
 
     @Override
-    public Boolean call() throws Exception {
+    public void run() {
         if (compack.e_com != null) {
             EsCompany c = compack.e_com;
             OrgCompanyStatisticsInfo info = MybatisClient.getCompanyStatisticsInfo(c.getOc_code());
@@ -37,7 +37,8 @@ public class ComScore extends ComBase {
             c.setWeight(weight);
             c.setScore(score);
         }
-        return true;
+
+        ComBase.latch.countDown();
     }
 
     /**
@@ -70,9 +71,9 @@ public class ComScore extends ComBase {
      * In query phase, sorting score = inner score * weight + score
      */
 
-    public static int getScoreByName(EsCompany c) throws Exception {
+    public static int getScoreByName(EsCompany c) {
         String name = c.getOc_name();
-        if (MiscellanyUtil.isBlank(name)) throw new Exception("invalid company name: " + name);
+        if (MiscellanyUtil.isBlank(name)) return -1000;
         if (name.endsWith("大学")) return 0;
         int score = 0;
         if (name.length() <= 4) {
@@ -89,7 +90,7 @@ public class ComScore extends ComBase {
     public static int getScoreByStatus(EsCompany c) {
         int status = c.getOc_status();
         if (status <= 3 && status >= 1 || status == 10) return 2;
-        return -10;
+        return -3;
     }
 
     public static int getScoreByArea(EsCompany c) {

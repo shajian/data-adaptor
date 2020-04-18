@@ -26,11 +26,11 @@ public class AdaFitHistogram {
      */
     private int n;
     /**
-     *  (0, b1]         ======>>>>> 0 is excluded <<<<<======
-     *  (b1, b2]
+     *  (0, b1]         ======>>>>> 0 is excluded <<<<<======  score: 1
+     *  (b1, b2]                                               score: 2
      *  ...
      *  (bn-2, bn-1]
-     *  (bn-1, inf]
+     *  (bn-1, inf]                                            score: n
      *  value:  b1, b2, b3, ... , bn-2, bn-1
      *  index:  0 ,  1,  2, ... , n-3 , n-2
      *  score: 1,  2,  3, ...,  n-2,  n-1 ,  n
@@ -100,19 +100,22 @@ public class AdaFitHistogram {
 
     public int getScore(int count) {
         if (count <= 0) return 0;
-        return getScore(count, 0, n-2);
+        for (int i = 0; i < n-2; ++i) {
+            if (count <= boundaries[i]) return i+1;
+        }
+        return n;
     }
 
-    private int getScore(int count, int i, int j) {
-        int index = (i+j)/2;
-        if (count <= boundaries[index]) {
-            if (index == 0 || count > boundaries[index-1]) return index+1;
-            return getScore(count, i, index-1);
-        }
-        // count > boundaries[index]
-        if (index == n-2 || count <= boundaries[index+1]) return index+2;
-        return getScore(count, index+1, j);
-    }
+//    private int getScore(int count, int i, int j) {
+//        int index = (i+j)/2;
+//        if (count <= boundaries[index]) {
+//            if (index == 0 || count > boundaries[index-1]) return index+1;
+//            return getScore(count, i, index-1);
+//        }
+//        // count > boundaries[index]
+//        if (index == n-2 || count <= boundaries[index+1]) return index+2;
+//        return getScore(count, index+1, j);
+//    }
 
     public byte[] serialize() {
         byte[] bytes = new byte[boundaries.length*4+4];

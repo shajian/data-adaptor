@@ -20,13 +20,15 @@ public class BeanUtil {
         PropertyDescriptor[] descriptors = beanInfo.getPropertyDescriptors();
         for(PropertyDescriptor descriptor : descriptors) {
             String name = descriptor.getName();
+            if ("class".equals(name)) continue;
             Method read = descriptor.getReadMethod();
             Object value = read.invoke(obj);
             if (value != null) {
                 map.put(name, value);
-            } else {
-                map.put(name, "");
             }
+//            else {
+//                map.put(name, "");
+//            }
         }
         return map;
     }

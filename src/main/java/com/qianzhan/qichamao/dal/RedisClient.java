@@ -1,35 +1,28 @@
 package com.qianzhan.qichamao.dal;
 
 import com.qianzhan.qichamao.util.DbConfigBus;
-import lombok.Getter;
-import lombok.Setter;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-public class RedisClient implements AutoCloseable {
+public class RedisClient {
     private static JedisPool pool = null;
 
-    private static Map<Integer, Jedis> map = new HashMap<>();
-
     public static int reverseIndexDb;
-    @Getter
-    private Jedis jedis = null;
 
     static {
         try {
             String host = DbConfigBus.getDbConfig_s("redis.host", "");
             int port = DbConfigBus.getDbConfig_i("redis.port", -1);
             String pwd = DbConfigBus.getDbConfig_s("redis.pass", "");
-            reverseIndexDb = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
+            reverseIndexDb = DbConfigBus.getDbConfig_i("redis.db.negative", -1);
             JedisPoolConfig config = new JedisPoolConfig();
             config.setMaxTotal(1000);
             config.setMaxIdle(100);
+
             if (pwd != null && !pwd.equals(""))
                 pool = new JedisPool(config, host, port, 10000, pwd);
             else
@@ -39,46 +32,11 @@ public class RedisClient implements AutoCloseable {
         }
     }
 
-    public static void registerClient(Integer dbIndex) {
-        if (!map.containsKey(dbIndex)) {
-            Jedis client = pool.getResource();
-            client.select(dbIndex);
-            map.put(dbIndex, client);
-        }
-    }
-
-    public static Jedis get(Integer dbIndex) {
-        if (!map.containsKey(dbIndex)) {
-            Jedis client = pool.getResource();
-            client.select(dbIndex);
-            map.put(dbIndex, client);
-            return client;
-        }
-        return map.get(dbIndex);
-    }
-
-    public static void unregisterClient(Integer dbIndex) {
-        if (map.containsKey(dbIndex)) {
-            Jedis client = map.get(dbIndex);
-            client.close();
-        }
-    }
-
-
-    public void close() {
-        try {
-            if (jedis != null) {
-                jedis.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public static String type(String key) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.type(key);
-        }
+//        try(RedisClient rc = new RedisClient()) {
+//            return rc.jedis.type(key);
+//        }
+        throw new NotImplementedException();
     }
 
     /**
@@ -87,9 +45,15 @@ public class RedisClient implements AutoCloseable {
      * @return
      */
     public static String get(String key) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.get(key);
-        }
+        return get(key, reverseIndexDb);
+    }
+
+    public static String get(String key, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        String value = jedis.get(key);
+        jedis.close();
+        return value;
     }
 
     /**
@@ -99,9 +63,15 @@ public class RedisClient implements AutoCloseable {
      * @return string-type reply of this operation
      */
     public static String set(String key, String value) {
-        try (RedisClient rc = new RedisClient()) {
-            return rc.jedis.set(key, value);
-        }
+        return set(key, value, reverseIndexDb);
+    }
+
+    public static String set(String key, String value, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        String status = jedis.set(key, value);
+        jedis.close();
+        return status;
     }
 
     /**
@@ -110,9 +80,15 @@ public class RedisClient implements AutoCloseable {
      * @return count of successfully deleted items
      */
     public static long del(String... keys) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.del(keys);
-        }
+        return del(reverseIndexDb, keys);
+    }
+
+    public static long del(int dbIndex, String... keys) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        long value = jedis.del(keys);
+        jedis.close();
+        return value;
     }
 
     /**
@@ -122,21 +98,39 @@ public class RedisClient implements AutoCloseable {
      * @return total length of the string after the append operation
      */
     public static long append(String key, String value) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.append(key, value);
-        }
+        return append(key, value, reverseIndexDb);
+    }
+
+    public static long append(String key, String value, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        long length = jedis.append(key, value);
+        jedis.close();
+        return length;
     }
 
     public static boolean exists(String key) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.exists(key);
-        }
+        return exists(key, reverseIndexDb);
+    }
+
+    public static boolean exists(String key, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        boolean b = jedis.exists(key);
+        jedis.close();
+        return b;
     }
 
     public static long exists(String... keys) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.exists(keys);
-        }
+        return exists(reverseIndexDb, keys);
+    }
+
+    public static long exists(int dbIndex, String... keys) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        long size = jedis.exists(keys);
+        jedis.close();
+        return size;
     }
 
     /**
@@ -145,9 +139,15 @@ public class RedisClient implements AutoCloseable {
      * @return
      */
     public static List<String> mget(String... keys) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.mget(keys);
-        }
+        return mget(reverseIndexDb, keys);
+    }
+
+    public static List<String> mget(int dbIndex, String... keys) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        List<String> values = jedis.mget(keys);
+        jedis.close();
+        return values;
     }
 
 
@@ -157,9 +157,15 @@ public class RedisClient implements AutoCloseable {
      * @return simple string reply
      */
     public static String mset(String... keysValues) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.mset(keysValues);
-        }
+        return mset(reverseIndexDb, keysValues);
+    }
+
+    public static String mset(int dbIndex, String... keysValues) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        String status = jedis.mset(keysValues);
+        jedis.close();
+        return status;
     }
 
     /**
@@ -169,9 +175,15 @@ public class RedisClient implements AutoCloseable {
      * @return 1 if all the keys were set; 0 if on key was set(at least one key already existed)
      */
     public static long msetnx(String... keysValues) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.msetnx(keysValues);
-        }
+        return msetnx(reverseIndexDb, keysValues);
+    }
+
+    public static long msetnx(int dbIndex, String... keysValues) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        long size = jedis.msetnx(keysValues);
+        jedis.close();
+        return size;
     }
 
     /**
@@ -181,9 +193,15 @@ public class RedisClient implements AutoCloseable {
      * @return
      */
     public static String getSet(String key, String value) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.getSet(key, value);
-        }
+        return getSet(key, value, reverseIndexDb);
+    }
+
+    public static String getSet(String key, String value, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        String old = jedis.getSet(key, value);
+        jedis.close();
+        return old;
     }
 
 
@@ -193,9 +211,15 @@ public class RedisClient implements AutoCloseable {
      * @return
      */
     public static Set<String> smembers(String key) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.smembers(key);
-        }
+        return smembers(key, reverseIndexDb);
+    }
+
+    public static Set<String> smembers(String key, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        Set<String> values = jedis.smembers(key);
+        jedis.close();
+        return values;
     }
 
     /**
@@ -205,9 +229,15 @@ public class RedisClient implements AutoCloseable {
      * @return
      */
     public static boolean sismember(String key, String member) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.sismember(key, member);
-        }
+        return sismember(key, member, reverseIndexDb);
+    }
+
+    public static boolean sismember(String key, String member, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        boolean b = jedis.sismember(key, member);
+        jedis.close();
+        return b;
     }
 
     /**
@@ -217,8 +247,67 @@ public class RedisClient implements AutoCloseable {
      * @return
      */
     public static long sadd(String key, String... members) {
-        try(RedisClient rc = new RedisClient()) {
-            return rc.jedis.sadd(key, members);
-        }
+        return sadd(reverseIndexDb, key, members);
+    }
+
+    public static long sadd(int dbIndex, String key, String... members) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        long size = jedis.sadd(key, members);
+        jedis.close();
+        return size;
+    }
+
+    public static Set<String> keys(String pattern) {
+        return keys(pattern, reverseIndexDb);
+    }
+    public static Set<String> keys(String pattern, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        Set<String> set = jedis.keys(pattern);
+        jedis.close();
+        return set;
+    }
+
+    public static Set<String> scan(String pattern) {
+        return scan(pattern, reverseIndexDb);
+    }
+
+    public static Set<String> scan(String pattern, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        ScanParams params = new ScanParams();
+        params.count(5000).match("s:*");
+        String cursor = "0";
+        Set<String> keys = new HashSet<>();
+        ScanResult<String> r;
+        do {
+            r = jedis.scan(cursor, params);
+            cursor = r.getCursor();
+            keys.addAll(r.getResult());
+        } while (!cursor.equals("0"));
+        jedis.close();
+        return keys;
+    }
+
+    public static Set<String> sscan(String key) {
+        return sscan(key, reverseIndexDb);
+    }
+
+    public static Set<String> sscan(String key, int dbIndex) {
+        Jedis jedis = pool.getResource();
+        jedis.select(dbIndex);
+        String cursor = "0";
+        Set<String> keys = new HashSet<>();
+        ScanParams params = new ScanParams();
+        params.count(5000);
+        ScanResult<String> r;
+        do {
+            r = jedis.sscan(key, cursor, params);
+            cursor = r.getCursor();
+            keys.addAll(r.getResult());
+        } while (!cursor.equals("0"));
+        jedis.close();
+        return keys;
     }
 }

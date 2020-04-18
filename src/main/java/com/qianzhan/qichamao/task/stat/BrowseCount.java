@@ -51,7 +51,9 @@ public class BrowseCount {
         if (counts.size() <= batch && counts.size() > 0)
             MybatisClient.truncateBrowseCount();
         while (createInner()) {
-            System.out.println(String.format("checkpoint: %d @ %s", checkpoint, new Date().toString()));
+            System.out.println(String.format("%s-checkpoint: %d @ %s",
+                    Thread.currentThread().getStackTrace()[1].getClassName(),
+                    checkpoint, new Date().toString()));
         }
         if (buffer.size() > 0) {
             flushBuffer();

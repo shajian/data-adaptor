@@ -1,6 +1,7 @@
 package com.qianzhan.qichamao.entity;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ArangoCpPack {
@@ -11,7 +12,7 @@ public class ArangoCpPack {
     public List<ArangoCpVD> share_holders;  // .
     public List<ArangoCpVD> senior_members;
 
-    public List<ArangoCpED> es;
+    public List<ArangoCpED> es = Collections.synchronizedList(new ArrayList<>());
 
     /**
      *
@@ -21,7 +22,6 @@ public class ArangoCpPack {
     public void setLp(String code, ArangoCpVD lp, int sequenceNum) {
         oc_code = code;
         this.lp = lp;
-        if (es == null) es = new ArrayList<>();
         es.add(new ArangoCpED("cp/"+lp.getKey(), "cp/"+code, "lp"+sequenceNum+code, 1));
     }
 

@@ -7,6 +7,7 @@ import com.qianzhan.qichamao.dal.es.EsIndexMeta;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.elasticsearch.common.geo.GeoPoint;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,7 +31,8 @@ public class EsCompany {
 
     @EsFieldMeta
     private String oc_code;     // doc_values=true to enable search-after function
-    @EsFieldMeta(type= EsFieldType.text, analyzers = {EsAnalyzer.hanlp_index, EsAnalyzer.hanlp_nlp, EsAnalyzer.keyword})
+    @EsFieldMeta(type= EsFieldType.text, analyzers = {EsAnalyzer.hanlp_index, EsAnalyzer.hanlp, EsAnalyzer.keyword})
+//    @EsFieldMeta(type=EsFieldType.text)
     private String oc_name;
     @EsFieldMeta(type=EsFieldType.text)
     private String oc_area;
@@ -47,7 +49,7 @@ public class EsCompany {
     @EsFieldMeta
     private List<String> gb_cats;
     @EsFieldMeta(type = EsFieldType.geo_point)
-    private EsGeoPoint coordinate;
+    private GeoPoint coordinate;
     @EsFieldMeta(type = EsFieldType.Byte)
     private byte oc_status;
     @EsFieldMeta(doc_values = false)
@@ -56,13 +58,16 @@ public class EsCompany {
     private List<String> senior_managers;
     @EsFieldMeta(doc_values = false)
     private List<String> share_holders;
-    @EsFieldMeta(type = EsFieldType.text, analyzers = {EsAnalyzer.hanlp_index, EsAnalyzer.hanlp_nlp, EsAnalyzer.keyword})
+    @EsFieldMeta(type = EsFieldType.text, analyzers = {EsAnalyzer.hanlp_index, EsAnalyzer.hanlp, EsAnalyzer.keyword})
+//    @EsFieldMeta(type = EsFieldType.text)
     private List<String> brands;
     @EsFieldMeta(doc_values = false)
     private List<String> old_names;
-    @EsFieldMeta(type = EsFieldType.text, analyzers = {EsAnalyzer.hanlp_index, EsAnalyzer.hanlp_nlp})
+    @EsFieldMeta(type = EsFieldType.text, analyzers = {EsAnalyzer.hanlp_index, EsAnalyzer.hanlp})
+//    @EsFieldMeta(type = EsFieldType.text)
     private String business;
-    @EsFieldMeta(type = EsFieldType.text, analyzers = {EsAnalyzer.hanlp_index, EsAnalyzer.hanlp_nlp})
+    @EsFieldMeta(type = EsFieldType.text, analyzers = {EsAnalyzer.hanlp_index, EsAnalyzer.hanlp})
+//    @EsFieldMeta(type = EsFieldType.text)
     private String oc_address;
     @EsFieldMeta(type = EsFieldType.Double)
     private double register_money;

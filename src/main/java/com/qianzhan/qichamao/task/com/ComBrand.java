@@ -16,8 +16,14 @@ public class ComBrand extends ComBase {
     }
 
     @Override
-    public Boolean call() throws Exception {
-        String tail = SharedData.getConfig(tasks_key).getBool("local") ? "_temp" : "";
+    public void run() {
+        String tail = "";
+        try {
+            tail = SharedData.getConfig(tasks_key).getBool("local") ? "_temp" : "";
+        } catch (Exception e) {
+
+        }
+
         if (compack.e_com != null) {
             EsCompany c = compack.e_com;
             List<String> brands = new ArrayList<>();
@@ -27,6 +33,7 @@ public class ComBrand extends ComBase {
             }
             c.setBrands(brands);
         }
-        return true;
+
+        ComBase.latch.countDown();
     }
 }

@@ -14,8 +14,8 @@ public class DbConfigBus {
             lock.lock();
             if (dbConfig == null) {
                 try {
-//                    is = new FileInputStream("db.properties");
-                    is = DbConfigBus.class.getResourceAsStream("/db.properties");
+//                    is = new FileInputStream("db.properties.private");
+                    is = DbConfigBus.class.getResourceAsStream("/db.properties.private");
                     dbConfig = new Properties();
                     dbConfig.load(is);
                 } catch (Exception e) {
@@ -39,7 +39,7 @@ public class DbConfigBus {
         String val = getDbConfig_s(key, null);
         if (val == null) return def;
 
-        return Integer.getInteger(key, def);
+        return Integer.parseInt(val);
     }
 
     public static String[] getDbConfig_ss(String key, String[] def) {

@@ -6,6 +6,6 @@ tmp/
 **/.vscode/
 target/
 out/
-
+data/
 *.iml
 **.private

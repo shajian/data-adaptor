@@ -7,6 +7,8 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class BaseWriter {
     protected int checkpoint = 0;
@@ -17,11 +19,13 @@ public abstract class BaseWriter {
     protected List<ComHook> postHooks;
     protected int[] tasks;
     protected int batch;
+    private Pattern[] filter_outs;
     /**
      * 1. launch task from original point
      * 2. launch task for update
      */
     protected int state;
+    protected int iter_print_interval;
 
     public BaseWriter(String file) throws Exception {
         config = new BaseConfigBus(file);
@@ -29,7 +33,13 @@ public abstract class BaseWriter {
         state = config.getInt("state", 1);
         tasks_key = config.getString("tasks_key");
         tasks = config.getInts("tasks");
-
+        iter_print_interval = config.getInt("iter_print_interval", 10);
+        String[] filter_outs_str = config.getString("filter_out").split("\\s");
+        filter_outs = new Pattern[filter_outs_str.length];
+        for (int i = 0; i < filter_outs_str.length; ++i) {
+            filter_outs[i] = Pattern.compile(String.format("^%s$", filter_outs_str[i]));
+        }
+        SharedData.registerConfig(tasks_key, config);
         ComPack.registerTasktype(config.getString("tasks_key"), tasks);
     }
 
@@ -44,15 +54,15 @@ public abstract class BaseWriter {
             }
             System.out.println("task finished");
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
     }
 
-    private void preCreate() {
+    protected void preCreate() throws Exception {
         // do some preparing work here before creation
     }
 
-    private void create() throws IOException {
+    private void create() throws Exception {
         preCreate();
 
         checkpoint = MybatisClient.getCheckpoint(checkpointName);
@@ -61,7 +71,8 @@ public abstract class BaseWriter {
             checkpoint = 0;
             System.out.println(String.format("create a new checkpoint: %s", checkpointName));
         } else {
-            System.out.print("reset checkpoint (Yy|Nn)?");
+            System.out.print(String.format("%s: current checkpoint is %d, reset checkpoint (Yy|Nn)?",
+                    checkpointName, checkpoint));
             char c = (char) System.in.read();
             if (c == 'Y' || c == 'y') {
                 checkpoint = 0; // need not to reset back to database, because each loop will reset checkpoint too.
@@ -69,8 +80,12 @@ public abstract class BaseWriter {
             }
         }
         System.out.println("start to create...");
+        int num = 0;
         while (createIter()) {
-            System.out.println(String.format("create: checkpoint: %d @ %s", checkpoint, new Date()));
+            num++;
+            if (iter_print_interval == 0 || num % iter_print_interval == 0) {
+                System.out.println(String.format("create: (%s, %d) @ %s", checkpointName, checkpoint, new Date()));
+            }
         }
 
         postCreate();
@@ -86,16 +101,21 @@ public abstract class BaseWriter {
                 hook.run();
             }
         }
-
-        boolean res = createInner();
+        boolean res = false;
+        try {
+            res = createInner();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         if (postHooks != null) {
             for (ComHook hook : postHooks) {
                 hook.run();
             }
         }
+        MybatisClient.updateCheckpoint(checkpointName, checkpoint);
         return res;
     }
-    private boolean createInner() {
+    protected boolean createInner() throws Exception {
         throw new NotImplementedException();
     }
     private void preUpdate() {
@@ -121,4 +141,11 @@ public abstract class BaseWriter {
     }
 
 
+    public boolean filter_out(String name) {
+        for (Pattern pattern : filter_outs) {
+            Matcher matcher = pattern.matcher(name);
+            if (matcher.matches()) return true;
+        }
+        return false;
+    }
 }

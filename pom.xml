@@ -52,12 +52,12 @@
 <!--                    <finalName>${project.name}</finalName>-->
                     <appendAssemblyId>false</appendAssemblyId>
                     <outputDirectory>${project.build.directory}/release/</outputDirectory>
-                    <descriptorRefs>
-                        <descriptorRef>bin</descriptorRef>
-                    </descriptorRefs>
-<!--                    <descriptors>-->
-<!--                        <descriptor>${pom.basedir}/src/main/assembly/assembly.xml</descriptor>-->
-<!--                    </descriptors>-->
+<!--                    <descriptorRefs>-->
+<!--                        <descriptorRef>bin</descriptorRef>-->
+<!--                    </descriptorRefs>-->
+                    <descriptors>
+                        <descriptor>${pom.basedir}/src/main/assembly/assembly.xml</descriptor>
+                    </descriptors>
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
@@ -181,7 +181,17 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>3.12.2</version>
+            <version>4.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-core</artifactId>
+            <version>4.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>bson</artifactId>
+            <version>4.0.2</version>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.data</groupId>-->

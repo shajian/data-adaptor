@@ -110,10 +110,10 @@ public class MiscellanyUtil {
 
     public static byte[] int2bytes(int i) {
         byte[] bytes = new byte[4];
-        bytes[3] = (byte) (i >> 24);
-        bytes[2] = (byte) (i >> 16);
-        bytes[1] = (byte) (i >> 8);
-        bytes[0] = (byte) i;
+        bytes[3] = (byte) ((i >> 24) & 0xFF);
+        bytes[2] = (byte) ((i >> 16) & 0xFF);
+        bytes[1] = (byte) ((i >> 8) & 0xFF);
+        bytes[0] = (byte) (i & 0xFF);
         return bytes;
     }
 
@@ -122,6 +122,6 @@ public class MiscellanyUtil {
     }
 
     public static int bytes2int(byte[] bytes, int start) {
-        return bytes[start]|(bytes[start+1]<<8)|(bytes[start+2]<<16)|(bytes[start+3]<<24);
+        return (bytes[start]&0xFF)|((bytes[start+1]&0xFF)<<8)|((bytes[start+2]&0xFF)<<16)|((bytes[start+3] & 0xFF)<<24);
     }
 }

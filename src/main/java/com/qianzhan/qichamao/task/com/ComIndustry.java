@@ -11,7 +11,7 @@ public class ComIndustry extends ComBase {
         super(key);
     }
     @Override
-    public Boolean call() {
+    public void run() {
         if (compack.e_com != null) {
             EsCompany c = compack.e_com;
             String code = c.getOc_code();
@@ -35,6 +35,7 @@ public class ComIndustry extends ComBase {
                 }
             }
         }
-        return true;
+
+        ComBase.latch.countDown();
     }
 }

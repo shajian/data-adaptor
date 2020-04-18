@@ -14,7 +14,7 @@ public class ComTag extends ComBase {
         super(key);
     }
     @Override
-    public Boolean call() throws Exception {
+    public void run() {
         if (compack.e_com != null) {
             EsCompany c = compack.e_com;
             List<OrgCompanyTag> tags = MybatisClient.getCompanyTags(c.getOc_code());
@@ -22,6 +22,7 @@ public class ComTag extends ComBase {
             TopNCollection<OrgCompanyTag> coll = new TopNCollection(3, OrgCompanyTag.comparator);
             for (OrgCompanyTag tag : tags) {
                 if (MiscellanyUtil.isBlank(tag.brandname)) continue;
+                if (!tag.isvalid) continue;
                 unweighted_tags.add(tag.brandname);
                 coll.put(tag);
             }
@@ -40,6 +41,7 @@ public class ComTag extends ComBase {
                 }
             }
         }
-        return true;
+
+        ComBase.latch.countDown();
     }
 }

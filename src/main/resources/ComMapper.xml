@@ -4,51 +4,51 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.qianzhan.qichamao.dal.mybatis.ComMapper">
     <select id="getCompanies" resultType="company">
-        select top ${count} oc_id, oc_code, oc_name, oc_address, oc_number, oc_area, oc_issuetime, oc_creditcode, oc_companytype from OrgCompanyList where oc_id &gt; #{start} order by oc_id;
+        select top ${count} oc_id, oc_code, oc_name, oc_address, oc_number, oc_area, oc_issuetime, oc_creditcode, oc_companytype from OrgCompanyList where oc_id &gt; ${start} order by oc_id;
     </select>
 
     <select id="getCompanyDtl" resultType="com.qianzhan.qichamao.entity.OrgCompanyDtl" parameterType="string">
-        select top 1 od_oc_code, od_faRen, od_regM, od_regMoney, od_regDate, od_bussinessDes, od_ext from OrgCompanyDtl where od_oc_code=#{oc_code};
+        select top 1 od_oc_code, od_faRen, od_regM, od_regMoney, od_regDate, od_bussinessDes, od_ext from OrgCompanyDtl where od_oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyMembers" resultType="com.qianzhan.qichamao.entity.OrgCompanyDtlMgr" parameterType="string">
-        select top 8000 om_oc_code, om_name, om_position from OrgCompanyDtlMgr where om_oc_code=#{oc_code};
+        select top 8000 om_oc_code, om_name, om_position from OrgCompanyDtlMgr where om_oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyGDs" resultType="com.qianzhan.qichamao.entity.OrgCompanyDtlGD" parameterType="string">
-        select top 8000 og_oc_code, og_name, og_money, og_BL from OrgCompanyDtlGD where og_oc_code=#{oc_code};
+        select top 8000 og_oc_code, og_name, og_money, og_BL from OrgCompanyDtlGD where og_oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyMembersGsxt" resultType="com.qianzhan.qichamao.entity.OrgCompanyDtlMgr">
-        select top 8000 om_oc_code, om_name, om_position from OrgCompanyGsxtDtlMgr_${tail} where om_oc_code=#{oc_code} and om_status &lt;> 4;
+        select top 8000 om_oc_code, om_name, om_status, om_position from OrgCompanyGsxtDtlMgr_${tail} where om_oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyGDsGsxt" resultType="com.qianzhan.qichamao.entity.OrgCompanyGsxtDtlGD">
-        select top 8000 og_oc_code, og_name, og_type, og_subscribeAccount, og_realAccount from OrgCompanyGsxtDtlGD_${tail} where og_oc_code=#{oc_code} and og_status &lt;&gt; 4;
+        select top 8000 og_oc_code, og_name, og_type, og_subscribeAccount, og_status, og_realAccount from OrgCompanyGsxtDtlGD_${tail} where og_oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyContacts" resultType="com.qianzhan.qichamao.entity.OrgCompanyContact" parameterType="string">
-        select top 8000 oc_code, oc_type, oc_contact, oc_contactName from OrgCompanyContact where oc_code=#{oc_code} and oc_status=1;
+        select top 1000 oc_code, oc_type, oc_contact, oc_contactName, oc_status from OrgCompanyContact where oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyOldNames" resultType="string" parameterType="string">
-        select top 8000 oc_usedName from OrgCompanyGsxtNameUsed where oc_code=#{oc_code};
+        select top 1000 oc_usedName from OrgCompanyGsxtNameUsed where oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyIndustries" resultType="com.qianzhan.qichamao.entity.OrgCompanyIndustry">
-        SELECT top 5000 oc_code, oc_data, oc_type from OrgCompanyExtensionData_${tail} where oc_code=#{oc_code};
+        SELECT top 100 oc_code, oc_data, oc_type from OrgCompanyExtensionData_${tail} where oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyGeo" resultType="com.qianzhan.qichamao.entity.OrgCompanyGeo" parameterType="string">
-        SELECT top 1 oc_code, latitude, longitude from OrgCompanyGeo where oc_code=#{oc_code};
+        SELECT top 1 oc_code, latitude, longitude from OrgCompanyGeo where oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyBrands" resultType="string">
-        SELECT top 8000 ob_name from OrgCompanyBrand${tail} where ob_oc_code=#{oc_code};
+        SELECT top 8000 ob_name from OrgCompanyBrand${tail} where ob_oc_code='${oc_code}';
     </select>
 
     <select id="getCompanyTags" resultType="com.qianzhan.qichamao.entity.OrgCompanyTag">
-        SELECT top 8000 code, brandname, score from BindCompanyBrand where code=#{oc_code} and isvalid=1
+        SELECT top 100 code, brandname, score, isvalid from BindCompanyBrand where code='${oc_code}'
     </select>
 
     <select id="getBrowseLogs" resultType="com.qianzhan.qichamao.entity.OrgBrowseLog">

@@ -1,5 +1,5 @@
 company:
-  shards: 5
+  shards: 3
   replicas: 0
   analyzers:
     sep: pattern [-\.\|,\s]

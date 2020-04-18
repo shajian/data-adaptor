@@ -21,13 +21,13 @@ public class ComDtl extends ComBase {
     }
 
     @Override
-    public Boolean call() {
+    public void run() {
         EsCompany e_com = compack.e_com;
         MongoCompany m_com = compack.m_com;
         ArangoCpPack a_com = compack.a_com;
         String oc_code = null;
         if (e_com != null) oc_code = e_com.getOc_code();
-        else if (e_com!=null) oc_code = m_com.getOc_code();
+        else if (e_com!=null) oc_code = m_com.get_id();
         else if (a_com!=null) oc_code = a_com.oc_code;
 
         Calendar calendar = Calendar.getInstance();
@@ -65,11 +65,11 @@ public class ComDtl extends ComBase {
                     if (flag == 1) {
                         // try to get oc_code of this company-type legal person
 //                        int pDbIndex = DbConfigBus.getDbConfig_i("redis.db.positive", 1);
-                        int nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
-                        Jedis jedis = RedisClient.get(nDbIndex);
-                        String codearea = jedis.get(dtl.od_faRen);
+//                        int nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
+//                        Jedis jedis = RedisClient.get(nDbIndex);
+                        String codearea = RedisClient.get(dtl.od_faRen);
                         if (codearea == null) {
-                            Set<String> codeareas = jedis.smembers("s:" + dtl.od_faRen);
+                            Set<String> codeareas = RedisClient.smembers("s:" + dtl.od_faRen);
                             if (MiscellanyUtil.isArrayEmpty(codeareas)) {
                                 a_com.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 1), 0);
                             } else {
@@ -103,6 +103,7 @@ public class ComDtl extends ComBase {
                 }
             }
         }
-        return true;
+
+        ComBase.latch.countDown();
     }
 }

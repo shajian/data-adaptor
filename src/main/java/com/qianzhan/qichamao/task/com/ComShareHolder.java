@@ -15,7 +15,7 @@ public class ComShareHolder extends ComBase {
         super(key);
     }
     @Override
-    public Boolean call() {
+    public void run() {
         String oc_code = null, area = null;
         if (compack.e_com != null) {
             oc_code = compack.e_com.getOc_code();
@@ -24,6 +24,7 @@ public class ComShareHolder extends ComBase {
             oc_code = compack.a_com.oc_code;
             area = compack.a_com.oc_area;
         }
+
         if (oc_code != null) {
             List<String> holders = new ArrayList<>();
             Map<String, Double> map = new HashMap<>();
@@ -38,7 +39,7 @@ public class ComShareHolder extends ComBase {
                 List<OrgCompanyGsxtDtlGD> gds = MybatisClient.getCompanyGDsGsxt(
                         oc_code, area.substring(0, 2));
                 for (OrgCompanyGsxtDtlGD gd : gds) {
-                    if (MiscellanyUtil.isBlank(gd.og_name)) continue;
+                    if (MiscellanyUtil.isBlank(gd.og_name) || gd.og_status == 4) continue;
                     holders.add(gd.og_name);
                     map.put(gd.og_name, gd.og_subscribeAccount);
                 }
@@ -53,11 +54,10 @@ public class ComShareHolder extends ComBase {
                     int flag = NLP.recognizeName(key);
 
                     if (flag == 1) {    // company-type senior member
-                        int nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
-                        Jedis jedis = RedisClient.get(nDbIndex);
-                        String codearea = jedis.get(key);
+//                        int nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
+                        String codearea = RedisClient.get(key);
                         if (codearea == null) {
-                            Set<String> codeareas = jedis.smembers("s:" + key);
+                            Set<String> codeareas = RedisClient.smembers("s:" + key);
                             if (MiscellanyUtil.isArrayEmpty(codeareas)) {
                                 compack.a_com.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 1), map.get(key), sn);
                                 sn++;
@@ -84,6 +84,6 @@ public class ComShareHolder extends ComBase {
             }
         }
 
-        return true;
+        ComBase.latch.countDown();
     }
 }

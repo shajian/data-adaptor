@@ -20,7 +20,7 @@ public class ComMember extends ComBase {
         super(key);
     }
     @Override
-    public Boolean call() {
+    public void run() {
         String oc_code = null, area = null;
         if (compack.e_com != null) {
             oc_code = compack.e_com.getOc_code();
@@ -39,7 +39,7 @@ public class ComMember extends ComBase {
             if (compack.e_com != null) {
                 List<String> managers = new ArrayList<>();
                 for (OrgCompanyDtlMgr member : members) {
-                    if (!MiscellanyUtil.isBlank(member.om_name)) {
+                    if (!MiscellanyUtil.isBlank(member.om_name) && member.om_status != 4) {
                         managers.add(member.om_name);
                     }
                 }
@@ -51,11 +51,11 @@ public class ComMember extends ComBase {
                     int flag = NLP.recognizeName(member.om_name);
 
                     if (flag == 1) {    // company-type senior member
-                        int nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
-                        Jedis jedis = RedisClient.get(nDbIndex);
-                        String codearea = jedis.get(member.om_name);
+//                        int nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
+//                        Jedis jedis = RedisClient.get(nDbIndex);
+                        String codearea = RedisClient.get(member.om_name);
                         if (codearea == null) {
-                            Set<String> codeareas = jedis.smembers("s:" + member.om_name);
+                            Set<String> codeareas = RedisClient.smembers("s:" + member.om_name);
                             if (MiscellanyUtil.isArrayEmpty(codeareas)) {
                                 compack.a_com.setMember(oc_code, new ArangoCpVD(member.om_name, oc_code, 1), member.om_position, sn);
                                 sn++;
@@ -74,7 +74,7 @@ public class ComMember extends ComBase {
                             sn++;
                         }
 
-                    } else if (flag == 2) {
+                    } else if (flag == 2) {  // natural person typed senior member
                         compack.a_com.setMember(oc_code, new ArangoCpVD(member.om_name, oc_code, 2), member.om_position, sn);
                         sn++;
                     }
@@ -82,6 +82,6 @@ public class ComMember extends ComBase {
             }
         }
 
-        return true;
+        ComBase.latch.countDown();
     }
 }

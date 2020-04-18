@@ -6,7 +6,7 @@ import java.util.*;
 
 public class RedisCompanySearcher {
     public static String[] fname2code(String[] names) {
-        List<String> rs = RedisClient.get(RedisClient.reverseIndexDb).mget(names);
+        List<String> rs = RedisClient.mget(names);
         String[] codes = new String[names.length];
         Map<String, Integer> setKeys = new HashMap<>();
         int i = 0;
@@ -19,7 +19,7 @@ public class RedisCompanySearcher {
             i++;
         }
         for (String k : setKeys.keySet()) {
-            Set<String> vs = RedisClient.get(RedisClient.reverseIndexDb).smembers(k);
+            Set<String> vs = RedisClient.smembers(k);
             if (vs.size() > 0) {
                 codes[setKeys.get(k)] = String.join(",", vs);
             }

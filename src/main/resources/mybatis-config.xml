@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
 
-    <properties resource="db.properties"></properties>
+    <properties resource="db.properties.private"></properties>
 
     <typeAliases>
         <typeAlias alias="company" type="com.qianzhan.qichamao.entity.OrgCompanyList"></typeAlias>

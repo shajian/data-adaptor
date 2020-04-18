@@ -15,7 +15,7 @@ public class ComContact extends ComBase {
     }
 
     @Override
-    public Boolean call() {
+    public void run() {
         if (compack.e_com != null) {
             EsCompany c = compack.e_com;
             List<String> m_phones = new ArrayList<>();
@@ -23,6 +23,7 @@ public class ComContact extends ComBase {
             List<String> mails = new ArrayList<>();
             for (OrgCompanyContact contact : MybatisClient.getCompanyContacts(c.getOc_code())) {
                 if (MiscellanyUtil.isBlank(contact.oc_contact)) continue;
+                if (contact.oc_status != 1) continue;
                 if (contact.oc_type == 1) {
                     m_phones.add(contact.oc_contact);
                 } else if (contact.oc_type == 2) {
@@ -36,6 +37,6 @@ public class ComContact extends ComBase {
             c.setMails(mails);
         }
 
-        return true;
+        ComBase.latch.countDown();
     }
 }

@@ -7,23 +7,25 @@ is_develop=true
 # 2. update a document partially or fully
 state=1
 
-# max numbers of multi-threads. If non-positive, it is automatically set
+# max numbers of multi-threads. If non-positive, it is automatically set(number of cores of cpu)
 # this value should not be set too large (<=128)
 max_threads=0
-# if not familar with the following two properties, please keep them untouched.
-thread_queue_size_ratio=5
-thread_active_threshold_ratio=2
+# To set size of queue in thread pool, it use a value that means
+# the ratio between size of queue and `batch`
+thread_queue_size_ratio=20
 
 # batch size
-batch=1000
+batch=500
+# if 0, print info in each iteration, or else, each `iter_print_interval` print info once.
+iter_print_interval=0
 
 # local or remote (dev or release)
 local=true
 
 # filter out via company name
-filter_out=\\s* .{1,3} 有限公司
+filter_out=\\s* .{1,3} 有限公司 [^a-zA-Z\\u4e00-\\u9fa5]+
 
 # refer to task.com.TaskType for task numbers
-tasks=1,2,4
+tasks=1
 # indicates the key, and `tasks` item with regards to this key depends the kind of ComPack
 tasks_key=es-mongo-arango
