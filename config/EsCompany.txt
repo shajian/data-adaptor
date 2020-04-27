@@ -15,7 +15,7 @@ max_threads=0
 thread_queue_size_ratio=20
 
 # batch size
-batch=500
+batch=1000
 # if 0, print info in each iteration, or else, each `iter_print_interval` print info once.
 iter_print_interval=0
 

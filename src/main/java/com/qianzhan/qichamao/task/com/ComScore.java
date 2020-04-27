@@ -124,6 +124,7 @@ public class ComScore extends ComBase {
     }
 
     public static int getScoreByStatisticsInfo(OrgCompanyStatisticsInfo info) {
+        if (info == null) return 0;
         int[] counts = new int[CompanyStatisticsInfo.StatInfo.size.ordinal()];
         counts[0] = info.GuDongXinXi;
         counts[1] = info.ZhuYaoRenYuan;

@@ -98,7 +98,8 @@ public class ComDtl extends ComBase {
                 if (e_com.getOc_types().isEmpty()) {
                     e_com.getOc_types().add("其他");
                 }
-                if (e_com.getEstablish_date().before(start) || e_com.getEstablish_date().after(end)) {
+                if (e_com.getEstablish_date() == null || e_com.getEstablish_date().before(start)
+                        || e_com.getEstablish_date().after(end)) {
                     e_com.setEstablish_date(start);
                 }
             }

@@ -170,6 +170,7 @@ public class EsBaseRepository<T> {
      * @param docs a list of documents to be indexed
      */
     public void index(List<T> docs) throws Exception {
+        if (docs.size() == 0) return;
 //        ParameterizedType paramType = (ParameterizedType)docs.getClass().getGenericSuperclass();
 //        Class<T> clazz = (Class) paramType.getActualTypeArguments()[0];
         // the same as (Class<T>) list.iterator().next().getClass();
