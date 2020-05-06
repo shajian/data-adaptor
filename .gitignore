@@ -7,5 +7,7 @@ tmp/
 target/
 out/
 data/
+#./data
 *.iml
 **.private
+data

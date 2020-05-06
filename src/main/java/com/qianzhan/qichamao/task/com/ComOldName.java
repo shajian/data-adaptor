@@ -26,6 +26,6 @@ public class ComOldName extends ComBase {
             c.setOld_names(names);
         }
 
-        ComBase.latch.countDown();
+        countDown();
     }
 }

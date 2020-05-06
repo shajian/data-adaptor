@@ -44,11 +44,12 @@ public class CompanyController {
     @PostMapping("/name2code")
     public EsCompanyTripleMatch[] name2code(@RequestBody String[] names, @RequestParam(value = "name") String name) {
         try {
-            if (names.length > 0) {
-                return EsCompanySearcher.name2code(names);
-            }
-            EsCompanyTripleMatch[] ms = { EsCompanySearcher.name2code(name) };
-            return ms;
+//            if (names.length > 0) {
+//                return EsCompanySearcher.name2code(names);
+//            }
+//            EsCompanyTripleMatch[] ms = { EsCompanySearcher.name2code(name) };
+//            return ms;
+            return null;
         } catch (Exception e) {
             return new EsCompanyTripleMatch[0];
         }

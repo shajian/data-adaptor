@@ -35,21 +35,27 @@ public class BaseConfigBus {
         fis.close();
     }
 
-    public String getString(String key) throws Exception {
+    public String getString(String key) {
         return map.get(key);
     }
 
-    public int getInt(String key, int def) throws Exception {
+    public int getInt(String key, int def) {
         String r = getString(key);
         if (r == null) return def;
         return Integer.parseInt(r);
     }
 
-    public boolean getBool(String key) throws Exception {
+    public boolean getBool(String key) {
         return Boolean.parseBoolean(getString(key));
     }
 
-    public float getFloat(String key, float def) throws Exception {
+    public boolean getBool(String key, boolean def) {
+        String v = getString(key);
+        if (v == null) return def;
+        return Boolean.parseBoolean(v);
+    }
+
+    public float getFloat(String key, float def) {
         String r = getString(key);
         if (r == null) return def;
         return Float.parseFloat(r);

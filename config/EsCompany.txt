@@ -7,12 +7,14 @@ is_develop=true
 # 2. update a document partially or fully
 state=1
 
+# multi_thread mode?
+multi_thread=true
 # max numbers of multi-threads. If non-positive, it is automatically set(number of cores of cpu)
 # this value should not be set too large (<=128)
 max_threads=0
 # To set size of queue in thread pool, it use a value that means
 # the ratio between size of queue and `batch`
-thread_queue_size_ratio=20
+thread_queue_size_ratio=10
 
 # batch size
 batch=1000

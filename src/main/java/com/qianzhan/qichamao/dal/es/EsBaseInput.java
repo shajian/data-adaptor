@@ -50,7 +50,7 @@ public class EsBaseInput<T> {
     }
 
     @Getter@Setter
-    private int page;   // starts from 0
+    private int from;   // starts from 0
     @Getter@Setter
     private int size;
 

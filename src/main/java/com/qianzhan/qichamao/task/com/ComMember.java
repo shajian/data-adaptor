@@ -1,14 +1,10 @@
 package com.qianzhan.qichamao.task.com;
 
 import com.qianzhan.qichamao.dal.RedisClient;
+import com.qianzhan.qichamao.dal.mongodb.MongoClientRegistry;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
-import com.qianzhan.qichamao.entity.ArangoCpVD;
-import com.qianzhan.qichamao.entity.EsComStat;
-import com.qianzhan.qichamao.entity.EsCompany;
-import com.qianzhan.qichamao.entity.OrgCompanyDtlMgr;
-import com.qianzhan.qichamao.util.DbConfigBus;
-import com.qianzhan.qichamao.util.MiscellanyUtil;
-import com.qianzhan.qichamao.util.NLP;
+import com.qianzhan.qichamao.entity.*;
+import com.qianzhan.qichamao.util.*;
 import redis.clients.jedis.Jedis;
 
 import java.util.ArrayList;
@@ -46,42 +42,45 @@ public class ComMember extends ComBase {
                 compack.e_com.setSenior_managers(managers);
             }
             if (compack.a_com != null) {
-                int sn = 0;
+                int dist = ComUtil.edgeLength(members.size());
                 for (OrgCompanyDtlMgr member : members) {
                     int flag = NLP.recognizeName(member.om_name);
 
                     if (flag == 1) {    // company-type senior member
-//                        int nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
-//                        Jedis jedis = RedisClient.get(nDbIndex);
-                        String codearea = RedisClient.get(member.om_name);
-                        if (codearea == null) {
-                            Set<String> codeareas = RedisClient.smembers("s:" + member.om_name);
-                            if (MiscellanyUtil.isArrayEmpty(codeareas)) {
-                                compack.a_com.setMember(oc_code, new ArangoCpVD(member.om_name, oc_code, 1), member.om_position, sn);
-                                sn++;
-                            } else {
-                                for (String ca: codeareas) {
-                                    String code = ca.substring(0, 9);
-                                    String oc_area = ca.substring(9);
-                                    compack.a_com.setMember(oc_code, new ArangoCpVD(code, member.om_name, oc_area), member.om_position, sn);
-                                    sn++;
-                                }
-                            }
+                        List<String> codeAreas = ComUtil.getCodeAreas(member.om_name);
+                        if (codeAreas.isEmpty()) {
+                            compack.a_com.setMember(oc_code, new ArangoCpVD(member.om_name, oc_code, 1), member.om_position, dist,false);
                         } else {
-                            String code = codearea.substring(0, 9);
-                            String oc_area = codearea.substring(9);
-                            compack.a_com.setMember(oc_code, new ArangoCpVD(code, member.om_name, oc_area), member.om_position, sn);
-                            sn++;
+
+//                            // store many companies sharing the same name into mongodb
+//                            if (codeAreas.size() > 1) {
+//                                MongoComShareName sn = new MongoComShareName();
+//                                sn.name = member.om_name;
+//                                sn.codes = codeAreas;
+//                                sn._id = Cryptor.md5(sn.name);
+//                                try {
+//                                    MongoClientRegistry.client(MongoClientRegistry.CollName.sharename)
+//                                            .insert(BeanUtil.obj2Doc(sn));
+//                                } catch (Exception e) { // maybe the doc has been inserted already
+//                                    e.printStackTrace();
+//                                }
+//                            }
+
+                            boolean share = codeAreas.size() > 1;
+                            for (String codeArea : codeAreas) {
+                                String code = codeArea.substring(0, 9);
+                                String oc_area = codeArea.substring(9);
+                                compack.a_com.setMember(oc_code, new ArangoCpVD(code, member.om_name, oc_area), member.om_position, dist, share);
+                            }
                         }
 
                     } else if (flag == 2) {  // natural person typed senior member
-                        compack.a_com.setMember(oc_code, new ArangoCpVD(member.om_name, oc_code, 2), member.om_position, sn);
-                        sn++;
+                        compack.a_com.setMember(oc_code, new ArangoCpVD(member.om_name, oc_code, 2), member.om_position, dist, false);
                     }
                 }
             }
         }
 
-        ComBase.latch.countDown();
+        countDown();
     }
 }

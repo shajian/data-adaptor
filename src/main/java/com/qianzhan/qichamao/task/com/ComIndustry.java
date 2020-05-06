@@ -40,6 +40,6 @@ public class ComIndustry extends ComBase {
             }
         }
 
-        ComBase.latch.countDown();
+        countDown();
     }
 }

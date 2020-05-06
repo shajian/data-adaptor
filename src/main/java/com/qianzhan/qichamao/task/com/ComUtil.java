@@ -1,9 +1,14 @@
 package com.qianzhan.qichamao.task.com;
 
+import com.qianzhan.qichamao.api.EsCompanySearcher;
+import com.qianzhan.qichamao.dal.RedisClient;
+import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
+import com.qianzhan.qichamao.entity.EsCompanyTripleMatch;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class ComUtil {
     public static byte getCompanyStatus(String ext) {
@@ -20,6 +25,10 @@ public class ComUtil {
         if (ext.contains("在营") || ext.contains("正常") || ext.contains("开业") || ext.contains("确立")
                 || ext.contains("在业") || ext.contains("在册") || ext.contains("登记成立")) return 1;
         return 0;
+    }
+
+    public static boolean isCompanyStatusNormal(byte status) {
+        return status == 1 || status == 2 || status == 10;
     }
 
     public static String getCompanyStatus(int i) {
@@ -101,4 +110,55 @@ public class ComUtil {
         return "T";
     }
 
+
+    public static List<String> getCodeAreas(String oc_name) {
+        List<String> codeAreas = new ArrayList<>();
+        String codearea = RedisClient.get(oc_name);
+        if (!MiscellanyUtil.isBlank(codearea)) {
+            codeAreas.add(codearea.substring(0,9)+codearea.substring(10));
+        } else {
+            Set<String> codeareas = RedisClient.smembers("s:" + oc_name);
+            if (!MiscellanyUtil.isArrayEmpty(codeareas)) {
+                for (String ca : codeareas) {
+                    codeAreas.add(ca.substring(0,9)+ca.substring(10));
+                }
+            } else {
+                // search from ES
+                try {
+                    List<EsCompanyTripleMatch> matches = EsCompanySearcher.name2code(oc_name);
+                    String backup = null;
+                    for (EsCompanyTripleMatch match : matches) {
+                        if (match.getConfidence() > 0.8) {
+                            if (backup == null) {
+                                backup = match.getOc_code() + match.getOc_area();
+                            }
+
+                            byte status = match.getOc_status();
+                            if (isCompanyStatusNormal(status)) {
+                                codeAreas.add(match.getOc_code() + match.getOc_area());
+                            }
+                        }
+                    }
+                    if (codeAreas.isEmpty() && backup != null) { //
+                        codeAreas.add(backup);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return codeAreas;
+    }
+
+    /**
+     * get the distance between `from` and `to` vertices
+     * `to` is a company, while `from` is its legal person, share holder or senior member.
+     * the distance is depended on the count of same type `from`.
+     * @param outDegree
+     * @return
+     */
+    public static int edgeLength(int outDegree) {
+        if (outDegree <= 0) return 1;   // default
+        return 1 + outDegree/ArangodbCompanyWriter.dist_step;
+    }
 }

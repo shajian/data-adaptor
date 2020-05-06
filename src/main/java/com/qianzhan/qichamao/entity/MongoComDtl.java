@@ -6,7 +6,7 @@ import lombok.Setter;
 import java.util.Date;
 
 @Getter@Setter
-public class MongoCompany {
+public class MongoComDtl {
     private String _id;
 //    private String oc_code;
     private String oc_number;

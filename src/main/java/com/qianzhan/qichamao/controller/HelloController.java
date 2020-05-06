@@ -1,7 +1,7 @@
 package com.qianzhan.qichamao.controller;
 
 import com.qianzhan.qichamao.dal.es.EsCompanyInput;
-import com.qianzhan.qichamao.entity.MongoCompany;
+import com.qianzhan.qichamao.entity.MongoComDtl;
 import com.qianzhan.qichamao.entity.RetrieveRange;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +24,7 @@ public class HelloController {
     }
 
     @PostMapping("/company-detail")
-    public MongoCompany company_detail(@RequestParam(value = "code") String code) {
+    public MongoComDtl company_detail(@RequestParam(value = "code") String code) {
         return null;
     }
 

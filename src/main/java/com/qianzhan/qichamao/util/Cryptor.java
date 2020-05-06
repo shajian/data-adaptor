@@ -5,7 +5,9 @@ import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 import javax.crypto.*;
 import javax.crypto.spec.DESKeySpec;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -75,5 +77,19 @@ public class Cryptor {
             e.printStackTrace();
         }
         return text;
+    }
+
+    public static String md5(String text) {
+        if (MiscellanyUtil.isBlank(text)) return "";
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.update(text.getBytes());
+            byte[] bytes = md.digest();
+            String code = new BigInteger(1, bytes).toString(16);
+            return code;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 }

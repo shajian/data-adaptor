@@ -11,9 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * To get a company's score, two steps must be pre-done:
@@ -24,12 +21,6 @@ import java.util.regex.Pattern;
 public class EsCompanyWriter extends BaseWriter {
     private EsCompanyRepository repository;
 
-
-    CountDownLatch latch = new CountDownLatch(3);
-//    private CompletionService<Boolean> threadpool;
-    private ThreadPoolExecutor pool;
-    private int max_threads;
-    private int thread_queue_size_ratio;
     private static final Logger logger = LoggerFactory.getLogger(EsCompanyWriter.class);
 
 
@@ -39,18 +30,9 @@ public class EsCompanyWriter extends BaseWriter {
         // initialize ES read/write components
         repository = new EsCompanyRepository();
         checkpointName = "data-adaptor.es."+repository.getIndexMeta().index();
-        thread_queue_size_ratio = config.getInt("thread_queue_size_ratio", 5);
-        max_threads = config.getInt("max_threads", 0);
-        if (max_threads <= 0) {
-            max_threads = Runtime.getRuntime().availableProcessors() * 15;
-        }
-        BlockingQueue<Runnable> queue = new LinkedBlockingDeque<>(thread_queue_size_ratio*batch);
-        pool = new ThreadPoolExecutor(max_threads, max_threads, 0, TimeUnit.SECONDS,
-                queue, new ThreadPoolExecutor.AbortPolicy());
-//        threadpool = new ExecutorCompletionService(pool);
     }
 
-    protected void preCreate() throws Exception {
+    protected void state1_pre() throws Exception {
         // create ES index
         CompanyStatisticsInfo.initialize();
         BrowseCount.initialize();
@@ -75,29 +57,30 @@ public class EsCompanyWriter extends BaseWriter {
         postHooks = new ArrayList<>();
         for (int task : tasks) {
             if ((task & TaskType.mongo.getValue()) != 0) {
-                postHooks.add(() -> MongodbCompanyWriter.write2Db(tasks_key));
+                postHooks.add(() -> MongodbCompanyWriter.writeDtl2Db(tasks_key));
             }
             if ((task & TaskType.arango.getValue()) != 0) {
-                postHooks.add(() -> ArangodbCompanyWriter.upsert(tasks_key));
+                postHooks.add(() -> ArangodbCompanyWriter.upsert_static(tasks_key, state));
             }
         }
         postHooks.add(() -> SharedData.closeBatch(tasks_key));
     }
 
-    protected boolean createInner() throws Exception{
+    protected boolean state1_inner() throws Exception{
         List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;    // task finishes !!!
 
-        ComBase.latch = new CountDownLatch(batch*9);
+        ComBase.resetLatch(tasks_key, batch*9);
         int count = 0;
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
-            char codeTail = company.oc_code.charAt(8);
+            if (!validateCode(company.oc_code)) continue;
+
             String area = company.oc_area;
-            if (codeTail == 'T' || codeTail == 'K'
-                    || area.startsWith("71") || area.startsWith("81") || area.startsWith("82")) {
+            if (area.startsWith("71") || area.startsWith("81") || area.startsWith("82")) {
                 continue;
             }
+            company.oc_name = company.oc_name.trim();
             if (filter_out(company.oc_name)) continue;
 
 
@@ -125,17 +108,17 @@ public class EsCompanyWriter extends BaseWriter {
         }
 
         int diff = (batch-count)*9;
-        while(ComBase.latch.getCount() != diff) {
-            Thread.sleep(2000);
+        while(ComBase.getLatch(tasks_key).getCount() != diff) {
+            Thread.sleep(100);
         }
 
-        ComBase.latch = new CountDownLatch(count);
+        ComBase.resetLatch(tasks_key, count);
         // set weight and score
         for (ComPack cp : SharedData.getBatch(tasks_key)) {
             pool.execute(new ComScore(cp));
         }
 
-        ComBase.latch.await();
+        ComBase.getLatch(tasks_key).await();
 
         System.out.println("writing into ES...");
 

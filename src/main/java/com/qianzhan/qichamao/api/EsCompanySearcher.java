@@ -10,6 +10,7 @@ import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,16 +19,16 @@ public class EsCompanySearcher {
     /**
      *
      * @param name full/part name of company.
-     * @return
+     * @return the first document
      * @throws Exception
      */
-    public static EsCompanyTripleMatch name2code(String name) throws Exception {
-        EsCompanyRepository es = new EsCompanyRepository();
+    public static List<EsCompanyTripleMatch> name2code(String name) throws Exception {
+        EsCompanyRepository es = EsCompanyRepository.singleton();
         EsCompanyInput input = new EsCompanyInput();
         input.setKeyword(name);
         input.setFields("oc_name");
         input.setSize(5);           // get top 5 documents
-        input.setSrc_inc("oc_name", "oc_code");
+        input.setSrc_inc("oc_name", "oc_code", "oc_area", "oc_status");
         // no aggregations or highlighting
         SearchResponse resp = es.search(input);
         if (resp.getShardFailures().length > 0)
@@ -37,16 +38,16 @@ public class EsCompanySearcher {
         return parse(name, resp);
     }
 
-    public static EsCompanyTripleMatch[] name2code(String[] names) throws Exception {
-        EsCompanyRepository es = new EsCompanyRepository();
-        EsCompanyTripleMatch[] matches = new EsCompanyTripleMatch[names.length];
+    public static List<EsCompanyTripleMatch>[] name2code(String[] names) throws Exception {
+        EsCompanyRepository es = EsCompanyRepository.singleton();
+        List<EsCompanyTripleMatch>[] matches = new List[names.length];
         EsCompanyInput[] inputs = new EsCompanyInput[names.length];
         for (int i = 0; i < names.length; ++i) {
             EsCompanyInput input = new EsCompanyInput();
             input.setKeyword(names[i]);
             input.setFields("oc_name");
             input.setSize(5);           // get top 5 documents
-            input.setSrc_inc("oc_name", "oc_code");
+            input.setSrc_inc("oc_name", "oc_code", "oc_area");
             inputs[i] = input;
         }
         MultiSearchResponse resp = es.multiSearch(inputs);
@@ -63,9 +64,9 @@ public class EsCompanySearcher {
         EsCompanyInput input = new EsCompanyInput();
         input.setField("oc_name.key");
         input.setIds(names);
-        input.setSrc_inc("oc_name", "oc_code");
+        input.setSrc_inc("oc_name", "oc_code", "oc_area");
 
-        SearchResponse resp = new EsCompanyRepository().multiSearch(input);
+        SearchResponse resp = EsCompanyRepository.singleton().multiSearch(input);
         if (resp.getShardFailures().length > 0) {
             throw new Exception(String.format("fullNames2codes failed.\n%s",
                     resp.getShardFailures()[0].reason()));
@@ -87,33 +88,38 @@ public class EsCompanySearcher {
         return codes;
     }
 
-    private static EsCompanyTripleMatch parse(String name, SearchResponse resp) throws Exception {
+    private static List<EsCompanyTripleMatch> parse(String name, SearchResponse resp) throws Exception {
         int min = name.length();
-        EsCompanyTripleMatch m = new EsCompanyTripleMatch();
+        EsCompanyTripleMatch m = null;
+        List<EsCompanyTripleMatch> matches = new ArrayList<>();
         for (SearchHit hit : resp.getHits().getHits()) {
             Map map = hit.getSourceAsMap();
+            Byte oc_status = (Byte) map.get("oc_status");
             String dname = (String)map.get("oc_name");
 
-
-            m.setOc_code((String)map.get("oc_code"));
-            m.setOc_area((String)map.get("oc_area"));
-            m.setOc_name(dname);
-            min = MiscellanyUtil.getEditDistanceSafe(dname, name);
-            break;
-
-
-//            int distance = MiscellanyUtil.getEditDistanceSafe(dname, name);
-//            if (distance < min) {
-//                m.setOc_code((String)map.get("oc_code"));
-//                m.setOc_area((String)map.get("oc_area"));
-//                m.setOc_name(dname);
-//                min = distance;
-//                if (min == 0) break;
-//            }
-
+            EsCompanyTripleMatch match = new EsCompanyTripleMatch();
+            match.setOc_code((String)map.get("oc_code"));
+            match.setOc_area((String)map.get("oc_area"));
+            match.setOc_name(dname);
+            if (oc_status != null) {
+                match.setOc_status(oc_status);
+            }
+            int dist = MiscellanyUtil.getEditDistanceSafe(dname, name);
+            if (dist == 0) {
+                match.setConfidence(1.0);
+                matches.add(match);
+            } else if (matches.size() > 0) {
+                continue;
+            } else if (dist < min) {
+                min = dist;
+                m = match;
+                m.setConfidence(1.0f-((float)dist)/name.length());
+            }
         }
-        m.setConfidence(1.0f-((float)min)/name.length());
-        return m;
+        if (matches.size() == 0 && m != null) {
+            matches.add(m);
+        }
+        return matches;
     }
 
 

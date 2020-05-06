@@ -38,7 +38,7 @@ public class ComScore extends ComBase {
             c.setScore(score);
         }
 
-        ComBase.latch.countDown();
+        countDown();
     }
 
     /**
@@ -145,7 +145,8 @@ public class ComScore extends ComBase {
         counts[16] = info.ShiXinRen;
         counts[17] = info.ZhanHuiHuiKan;
         counts[18] = info.ZhaoPin;
-        counts[19] = info.FenZhi;
+        counts[19] = info.DuiWaiTouZi;
+        counts[20] = info.FenZhi;
         return CompanyStatisticsInfo.getScore(counts);
     }
 

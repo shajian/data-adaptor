@@ -23,6 +23,6 @@ public class ComGeo extends ComBase {
             }
         }
 
-        ComBase.latch.countDown();
+        countDown();
     }
 }

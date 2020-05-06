@@ -66,6 +66,10 @@ public class EsCompanyInput extends EsBaseInput<EsCompany> {
      * block_match
      */
     private byte match_mode;
+
+    /**
+     * specify fields to be matched
+     */
     private Set<String> fields;
     @Getter
     private static Set<String> def_compound_fields = new HashSet<String>() {
@@ -82,6 +86,9 @@ public class EsCompanyInput extends EsBaseInput<EsCompany> {
             add("legal_person");
             add("senior_managers");
             add("share_holders");
+            add("mobile_phones");
+            add("fix_phones");
+            add("mails");
         }
     };
 

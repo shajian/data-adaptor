@@ -2,11 +2,15 @@ package com.qianzhan.qichamao.task.com;
 
 import com.qianzhan.qichamao.config.BaseConfigBus;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +30,10 @@ public abstract class BaseWriter {
      */
     protected int state;
     protected int iter_print_interval;
+    protected ThreadPoolExecutor pool;
+    protected int max_threads;
+    protected int thread_queue_size_ratio;
+
 
     public BaseWriter(String file) throws Exception {
         config = new BaseConfigBus(file);
@@ -33,7 +41,7 @@ public abstract class BaseWriter {
         state = config.getInt("state", 1);
         tasks_key = config.getString("tasks_key");
         tasks = config.getInts("tasks");
-        iter_print_interval = config.getInt("iter_print_interval", 10);
+        iter_print_interval = config.getInt("iter_print_interval", 0);
         String[] filter_outs_str = config.getString("filter_out").split("\\s");
         filter_outs = new Pattern[filter_outs_str.length];
         for (int i = 0; i < filter_outs_str.length; ++i) {
@@ -41,30 +49,91 @@ public abstract class BaseWriter {
         }
         SharedData.registerConfig(tasks_key, config);
         ComPack.registerTasktype(config.getString("tasks_key"), tasks);
+
+        if (config.getBool("multi_thread", false)) {
+            thread_queue_size_ratio = config.getInt("thread_queue_size_ratio", 5);
+            max_threads = config.getInt("max_threads", 0);
+            if (max_threads <= 0) {
+                max_threads = Runtime.getRuntime().availableProcessors() * 15;
+            }
+            BlockingQueue<Runnable> queue = new LinkedBlockingDeque<>(thread_queue_size_ratio*batch);
+            pool = new ThreadPoolExecutor(max_threads, max_threads, 0, TimeUnit.SECONDS,
+                    queue, new ThreadPoolExecutor.AbortPolicy());
+        }
     }
 
     public void start() {
         try {
-            if (state == 1) {
-                create();
-            } else if (state == 2) {
-                update();
-            } else if (state == 3) {
-
-            }
-            System.out.println("task finished");
+            exec_state();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    protected void preCreate() throws Exception {
-        // do some preparing work here before creation
+    protected void state1_pre() throws Exception { }
+    protected void state2_pre() throws Exception { }
+    protected void state3_pre() throws Exception { }
+    protected void state4_pre() throws Exception { }
+    protected void state5_pre() throws Exception { }
+    protected void state6_pre() throws Exception { }
+    protected void state1_post() throws Exception { }
+    protected void state2_post() throws Exception { }
+    protected void state3_post() throws Exception { }
+    protected void state4_post() throws Exception { }
+    protected void state5_post() throws Exception { }
+    protected void state6_post() throws Exception { }
+    protected boolean state1_inner() throws Exception {
+        throw new NotImplementedException();
+    }
+    protected boolean state2_inner() throws Exception {
+        throw new NotImplementedException();
+    }
+    protected boolean state3_inner() throws Exception {
+        throw new NotImplementedException();
+    }
+    protected boolean state4_inner() throws Exception {
+        throw new NotImplementedException();
+    }
+    protected boolean state5_inner() throws Exception {
+        throw new NotImplementedException();
+    }
+    protected boolean state6_inner() throws Exception {
+        throw new NotImplementedException();
     }
 
-    private void create() throws Exception {
-        preCreate();
+    private void exec_state() throws Exception {
+        if (state == 1) {
+            state1_pre();
+        } else if (state == 2) {
+            state2_pre();
+        } else if (state == 3) {
+            state3_pre();
+        } else if (state == 4) {
+            state4_pre();
+        } else if (state == 5) {
+            state5_pre();
+        } else if (state == 6) {
+            state6_pre();
+        }
 
+        state_main();
+
+        if (state == 1) {
+            state1_post();
+        } else if (state == 2) {
+            state2_post();
+        } else if (state == 3) {
+            state3_post();
+        } else if (state == 4) {
+            state4_post();
+        } else if (state == 5) {
+            state5_post();
+        } else if (state == 6) {
+            state6_post();
+        }
+    }
+
+    private void state_main() throws Exception {
         checkpoint = MybatisClient.getCheckpoint(checkpointName);
         if (checkpoint < 0) {
             MybatisClient.insertCheckpoint0(checkpointName);
@@ -81,21 +150,18 @@ public abstract class BaseWriter {
         }
         System.out.println("start to create...");
         int num = 0;
-        while (createIter()) {
+        while (state_iter()) {
             num++;
             if (iter_print_interval == 0 || num % iter_print_interval == 0) {
-                System.out.println(String.format("create: (%s, %d) @ %s", checkpointName, checkpoint, new Date()));
+                System.out.println(String.format("state: %d, %s: %d @ %s",
+                        state, checkpointName, checkpoint, new Date()));
             }
         }
-
-        postCreate();
     }
 
-    private void postCreate() {
-        // do some posting work here after creation.
-    }
 
-    private boolean createIter() {
+
+    private boolean state_iter() {
         if (preHooks != null) {
             for (ComHook hook : preHooks) {
                 hook.run();
@@ -103,7 +169,19 @@ public abstract class BaseWriter {
         }
         boolean res = false;
         try {
-            res = createInner();
+            if (state == 1) {
+                res = state1_inner();
+            } else if (state == 2) {
+                res = state2_inner();
+            } else if (state == 3) {
+                res = state3_inner();
+            } else if (state == 4) {
+                res = state4_inner();
+            } else if (state == 5) {
+                res = state5_inner();
+            } else if (state == 6) {
+                res = state6_inner();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -115,30 +193,8 @@ public abstract class BaseWriter {
         MybatisClient.updateCheckpoint(checkpointName, checkpoint);
         return res;
     }
-    protected boolean createInner() throws Exception {
-        throw new NotImplementedException();
-    }
-    private void preUpdate() {
-        // do some preparing work here before update.
-    }
 
-    private void update() {
-        preUpdate();
 
-        while (updateIter()) {
-            System.out.println(String.format("update: checkpoint: %d @ %s", checkpoint, new Date()));
-        }
-
-        postUpdate();
-    }
-
-    private boolean updateIter() {
-        throw new NotImplementedException();
-    }
-
-    private void postUpdate() {
-        // do some posting work here after update.
-    }
 
 
     public boolean filter_out(String name) {
@@ -147,5 +203,17 @@ public abstract class BaseWriter {
             if (matcher.matches()) return true;
         }
         return false;
+    }
+
+    public boolean validateCode(String code) {
+        if (MiscellanyUtil.isBlank(code) || code.length() != 9) return false;
+        char codeTail = code.charAt(8);
+        if (codeTail == 'T' || codeTail == 'K') {
+            return false;
+        }
+        for (char c : code.toCharArray()) {
+            if (!(c >= '0' && c <= '9') && !(c >= 'A' && c <= 'Z')) return false;
+        }
+        return true;
     }
 }

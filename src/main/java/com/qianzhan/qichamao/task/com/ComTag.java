@@ -42,6 +42,6 @@ public class ComTag extends ComBase {
             }
         }
 
-        ComBase.latch.countDown();
+        countDown();
     }
 }

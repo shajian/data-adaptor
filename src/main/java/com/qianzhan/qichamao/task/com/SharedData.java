@@ -9,6 +9,7 @@ import java.util.Map;
 
 public class SharedData {
     // this cache is instantaneous
+    // key: tasks_key, value: ComPack
     private static Map<String, ComPack> packs = new HashMap<>();
     // each item of this cache has an iterated lifetime
     private static Map<String, List<ComPack>> packss = new HashMap<>();

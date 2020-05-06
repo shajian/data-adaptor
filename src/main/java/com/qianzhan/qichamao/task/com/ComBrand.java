@@ -34,6 +34,6 @@ public class ComBrand extends ComBase {
             c.setBrands(brands);
         }
 
-        ComBase.latch.countDown();
+        countDown();
     }
 }

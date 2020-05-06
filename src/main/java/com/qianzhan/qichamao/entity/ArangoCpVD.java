@@ -2,7 +2,12 @@ package com.qianzhan.qichamao.entity;
 
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.entity.DocumentField;
+import com.qianzhan.qichamao.util.Cryptor;
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 import lombok.Getter;
+
+import java.text.MessageFormat;
+import java.util.Map;
 
 @Getter
 public class ArangoCpVD {
@@ -28,6 +33,8 @@ public class ArangoCpVD {
      */
     private int type;
 
+    private ArangoCpVD() { }
+
     /**
      * only for company vertex
      * @param code
@@ -37,7 +44,7 @@ public class ArangoCpVD {
     public ArangoCpVD(String code, String name, String area) {
         type = 1;
         this.name = name;
-        this.area = area;
+        this.area = area == null ? "" : area;
         this.key = code;
     }
 
@@ -53,16 +60,49 @@ public class ArangoCpVD {
     public ArangoCpVD(String name, String code, int type) {
         this.type = type;
         this.name = name;
-        this.key = String.format("%s:%s", code, name);
+        this.key = String.format("%s%s", code, Cryptor.md5(name));
     }
 
     public BaseDocument to() {
         BaseDocument doc = new BaseDocument(this.key);
         doc.addAttribute("name", name);
         doc.addAttribute("type", type);
-        if (area != null) {
+        if (type == 1) {
             doc.addAttribute("area", area);
         }
         return doc;
+    }
+
+    public static ArangoCpVD from(BaseDocument doc) {
+        ArangoCpVD v = new ArangoCpVD();
+        v.key = doc.getKey();
+        v.id = doc.getId();
+        Map<String, Object> props = doc.getProperties();
+        if (props.containsKey("type")) {
+            v.type = (Integer) props.get("type");
+        }
+        v.area = (String) props.get("area");
+        v.name = (String) props.get("name");
+        return v;
+    }
+
+    /**
+     * convert this instance to `upsert` AQL
+     * update: `key` and `type` cannot be updated
+     * @param coll the collection name
+     * @return
+     */
+    public String upsertAql(String coll) {
+        String aql = "UPSERT { _key: '%s' } INSERT { _key: '%s', name: '%s', type: %d";
+        if (type == 2) {    // person, no need to store `area`
+            aql += " } UPDATE { name: '%s' } IN %s OPTIONS { keepNull: false }";
+            aql = String.format(aql, key, key, name, type, name, coll);
+        } else {    // company
+            aql += ", area: '%s' } UPDATE { name: '%s', area: '%s' } IN %s OPTIONS { keepNull: false }";
+            aql = String.format(aql, key, key, name, type, area, name, area, coll);
+        }
+        // if want to return old value, please append
+        // aql += " RETURN { doc: NEW, type: OLD ? 'update' : 'insert' }";
+        return aql;
     }
 }

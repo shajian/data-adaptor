@@ -57,7 +57,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
         SearchRequest request = new SearchRequest(indexMeta.index());
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.size(input.getSize());
-        if (input.getAccessMode() == 0) builder.from(input.getPage()*input.getSize());
+        if (input.getAccessMode() == 0) builder.from(input.getFrom()*input.getSize());
         if (input.getTimeOut() > 0) {
             builder.timeout(new TimeValue(input.getTimeOut(), TimeUnit.SECONDS));
         }
@@ -91,7 +91,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
             }
             builder.highlighter(hlBuilder);
         }
-        if (input.getAggs() != null && input.getAccessMode() != 2 && input.getPage() == 0) {
+        if (input.getAggs() != null && input.getAccessMode() != 2 && input.getFrom() == 0) {
             EsAggSetting aggs = input.getAggs();
             aggs.shrink(input.getFilters());
             if (aggs.getTerms() != null) {
@@ -366,7 +366,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
         for (EsCompanyInput input : inputs) {
             SearchRequest r = new SearchRequest(indexMeta.index());
             SearchSourceBuilder b = new SearchSourceBuilder();
-            b.from(input.getPage()).size(input.getSize());
+            b.from(input.getFrom()).size(input.getSize());
             if (input.getTimeOut() > 0) {
                 b.timeout(new TimeValue(input.getTimeOut(), TimeUnit.SECONDS));
             }
@@ -387,7 +387,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
             } else {
                 b.sort(new FieldSortBuilder(input.getSortField()).order(input.getSortOrder()));
             }
-            b.query(query(input));
+            b.query(query(input));      // query construction
             r.source(b);
             request.add(r);
         }

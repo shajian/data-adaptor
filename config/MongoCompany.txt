@@ -1,23 +1,20 @@
 state=1
 
 # multi_thread mode?
-multi_thread=false
+multi_thread=true
 # max numbers of multi-threads. If non-positive, it is automatically set(number of cores of cpu)
 # this value should not be set too large (<=128)
 max_threads=0
 # To set size of queue in thread pool, it use a value that means
 # the ratio between size of queue and `batch`
-thread_queue_size_ratio=20
+thread_queue_size_ratio=10
 
-batch=512
+batch=4096
 # refer to task.com.TaskType for task numbers
-# tasks=8,4
-tasks=8
+tasks=2
 # indicates the key, and `tasks` item with regards to this key depends the kind of ComPack
-tasks_key=redis-arango
+tasks_key=mongo
 
 # filter out via company name
 filter_out=\\s* .{1,3} 有限公司 [^a-zA-Z\\u4e00-\\u9fa5]+
 
-# if large than 1, print information not in each one iteration but each `interval` iterations
-iter_print_interval=10

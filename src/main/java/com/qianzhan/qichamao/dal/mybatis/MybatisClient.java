@@ -3,6 +3,7 @@ package com.qianzhan.qichamao.dal.mybatis;
 import com.qianzhan.qichamao.dal.DbName;
 import com.qianzhan.qichamao.entity.*;
 import com.qianzhan.qichamao.entity.*;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -96,6 +97,8 @@ public class MybatisClient {
         session.close();
         return dtl;
     }
+
+
 
     public static List<OrgCompanyDtlMgr> getCompanyMembers(String oc_code) {
         SqlSession session  = factories.get(DbName.com).openSession();
@@ -239,5 +242,61 @@ public class MybatisClient {
         mapper.truncateBrowseCount();
         session.commit();
         session.close();
+    }
+
+    public static List<String> getGsxtSubtableNames() {
+        SqlSession session  = factories.get(DbName.com).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<String> tables = mapper.getGsxtSubtableNames();
+        session.close();
+        return tables;
+    }
+
+    public static List<OrgCompanyDimBatch> getCompanyGDBatch(int start, int count) {
+        SqlSession session = factories.get(DbName.com).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<OrgCompanyDimBatch> gds = mapper.getCompanyGDBatch(start, count);
+        session.close();
+        return gds;
+    }
+
+    public static List<OrgCompanyDimBatch> getCompanyMemberBatch(int start, int count) {
+        SqlSession session = factories.get(DbName.com).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<OrgCompanyDimBatch> gds = mapper.getCompanyMemberBatch(start, count);
+        session.close();
+        return gds;
+    }
+
+    public static List<OrgCompanyDimBatch> getCompanyGDGsxtBatch(int start, int count, String tail) {
+        SqlSession session = factories.get(DbName.com).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<OrgCompanyDimBatch> gds = mapper.getCompanyGDGsxtBatch(start, count, tail);
+        session.close();
+        return gds;
+    }
+
+    public static List<OrgCompanyDimBatch> getCompanyMemberGsxtBatch(int start, int count, String tail) {
+        SqlSession session = factories.get(DbName.com).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<OrgCompanyDimBatch> gds = mapper.getCompanyMemberGsxtBatch(start, count, tail);
+        session.close();
+        return gds;
+    }
+
+    public static List<OrgCompanyDimBatch> getCompanyDtls(int start, int count) {
+        SqlSession session = factories.get(DbName.com).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<OrgCompanyDimBatch> dtls = mapper.getCompanyDtls(start, count);
+        session.close();
+        return dtls;
+    }
+
+    public static List<OrgCompanyContact> getCompanyContactBatch(int start, int count) {
+        SqlSession session  = factories.get(DbName.ext).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<OrgCompanyContact> contacts = mapper.getCompanyContactBatch(start, count);
+        session.close();
+        return contacts;
     }
 }

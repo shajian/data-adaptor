@@ -1,19 +1,18 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.config.BaseConfigBus;
-import com.qianzhan.qichamao.dal.RedisClient;
+import com.qianzhan.qichamao.dal.mongodb.MongoClientRegistry;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.*;
-import com.qianzhan.qichamao.util.DbConfigBus;
+import com.qianzhan.qichamao.util.BeanUtil;
+import com.qianzhan.qichamao.util.Cryptor;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.util.NLP;
-import redis.clients.jedis.Jedis;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Set;
+import java.util.List;
 
 public class ComDtl extends ComBase {
     public ComDtl(String key) {
@@ -23,12 +22,13 @@ public class ComDtl extends ComBase {
     @Override
     public void run() {
         EsCompany e_com = compack.e_com;
-        MongoCompany m_com = compack.m_com;
+        MongoComDtl m_com = compack.m_com;
         ArangoCpPack a_com = compack.a_com;
         String oc_code = null;
         if (e_com != null) oc_code = e_com.getOc_code();
         else if (e_com!=null) oc_code = m_com.get_id();
         else if (a_com!=null) oc_code = a_com.oc_code;
+        else if (compack.r_com != null) oc_code = compack.r_com.getCode();
 
         Calendar calendar = Calendar.getInstance();
         calendar.set(1949, 1, 1);
@@ -39,7 +39,8 @@ public class ComDtl extends ComBase {
         if (oc_code != null) {
             OrgCompanyDtl dtl = MybatisClient.getCompanyDtl(oc_code);
             if (dtl != null) {
-                if (e_com != null) {
+                dtl.od_faRen = dtl.od_faRen.trim();
+                if (e_com != null) {    // fill es data
                     e_com.setLegal_person(dtl.od_faRen);
                     e_com.setOc_status(ComUtil.getCompanyStatus(dtl.od_ext));
                     e_com.setRegister_money(dtl.od_regM);
@@ -56,45 +57,55 @@ public class ComDtl extends ComBase {
                         }
                     }
                 }
-                if (m_com != null) {
+                if (m_com != null) {    // fill mongo data
                     m_com.setOc_money(dtl.od_regMoney);
                 }
-                if (a_com != null) {
+                if (a_com != null) {    // fill arango data
                     int flag = NLP.recognizeName(dtl.od_faRen);
-
-                    if (flag == 1) {
+//                    int sn = 0;
+                    if (flag == 1) {    // company-type legal person
                         // try to get oc_code of this company-type legal person
-//                        int pDbIndex = DbConfigBus.getDbConfig_i("redis.db.positive", 1);
-//                        int nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
-//                        Jedis jedis = RedisClient.get(nDbIndex);
-                        String codearea = RedisClient.get(dtl.od_faRen);
-                        if (codearea == null) {
-                            Set<String> codeareas = RedisClient.smembers("s:" + dtl.od_faRen);
-                            if (MiscellanyUtil.isArrayEmpty(codeareas)) {
-                                a_com.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 1), 0);
-                            } else {
-                                int sn = 0;
-                                for (String ca: codeareas) {
-                                    String code = codearea.substring(0, 9);
-                                    String area = codearea.substring(9);
-                                    a_com.setLp(oc_code, new ArangoCpVD(code, dtl.od_faRen, area), sn);
-                                    sn++;
-                                }
-                            }
+                        List<String> codeAreas = ComUtil.getCodeAreas(dtl.od_faRen);
+
+                        if (codeAreas.isEmpty()) {
+                            a_com.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 1), false);
                         } else {
-                            String code = codearea.substring(0, 9);
-                            String area = codearea.substring(9);
-                            a_com.setLp(oc_code, new ArangoCpVD(code, dtl.od_faRen, area), 0);
+
+//                            // store many companies sharing the same name into mongodb
+//                            if (codeAreas.size() > 1) {
+//                                MongoComShareName sn = new MongoComShareName();
+//                                sn.name = dtl.od_faRen;
+//                                sn.codes = codeAreas;
+//                                sn._id = Cryptor.md5(sn.name);
+//                                try {
+//                                    MongoClientRegistry.client(MongoClientRegistry.CollName.sharename)
+//                                            .insert(BeanUtil.obj2Doc(sn));
+//                                } catch (Exception e) { // maybe the doc has been inserted already
+//                                    e.printStackTrace();
+//                                }
+//                            }
+
+                            boolean share = codeAreas.size() > 1;
+                            for (String codeArea : codeAreas) {
+                                String code = codeArea.substring(0, 9);
+                                String area = codeArea.substring(9);
+                                // set legal person
+                                a_com.setLp(oc_code, new ArangoCpVD(code, dtl.od_faRen, area), share);
+                            }
                         }
 
                     } else if (flag == 2) {
-                        a_com.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 2), 0);
+                        a_com.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 2), false);
                     }
+                }
+                if (compack.r_com != null) {
+                    byte status = ComUtil.getCompanyStatus(dtl.od_ext);
+                    compack.r_com.setValid(ComUtil.isCompanyStatusNormal(status));
                 }
             }
 
             // post handling
-            if (e_com != null) {
+            if (e_com != null) {    // correct es data
                 if (e_com.getOc_types().isEmpty()) {
                     e_com.getOc_types().add("其他");
                 }
@@ -105,6 +116,6 @@ public class ComDtl extends ComBase {
             }
         }
 
-        ComBase.latch.countDown();
+        countDown();
     }
 }

@@ -1,5 +1,6 @@
 package com.qianzhan.qichamao.app;
 
+import com.qianzhan.qichamao.task.com.ArangodbCompanyWriter;
 import com.qianzhan.qichamao.task.com.EsCompanyWriter;
 import com.qianzhan.qichamao.task.com.RedisCompanyIndexWriter;
 import com.qianzhan.qichamao.task.stat.BrowseCount;
@@ -22,6 +23,9 @@ public class Some {
                 writer.start();
             } else if (taskNo == 3) {
                 RedisCompanyIndexWriter writer = new RedisCompanyIndexWriter();
+                writer.start();
+            } else if (taskNo == 4) {
+                ArangodbCompanyWriter writer = new ArangodbCompanyWriter();
                 writer.start();
             }
             System.out.println("game f**king over");

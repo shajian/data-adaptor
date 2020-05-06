@@ -48,7 +48,7 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
         SearchRequest request = new SearchRequest(indexMeta.index());
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.size(input.getSize());
-        if (input.getAccessMode() == 0) builder.from(input.getPage()*input.getSize());
+        if (input.getAccessMode() == 0) builder.from(input.getFrom()*input.getSize());
         if (input.getTimeOut() > 0) {
             builder.timeout(new TimeValue(input.getTimeOut(), TimeUnit.SECONDS));
         }
@@ -83,7 +83,7 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
             }
             builder.highlighter(hlBuilder);
         }
-        if (input.getAggs() != null && input.getAccessMode() != 2 && input.getPage() == 0) {
+        if (input.getAggs() != null && input.getAccessMode() != 2 && input.getFrom() == 0) {
             for (AggregationBuilder agg : aggregate(input)) {
                 builder.aggregation(agg);
             }

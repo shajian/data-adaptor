@@ -3,6 +3,7 @@ package com.qianzhan.qichamao.entity;
 import java.util.Date;
 
 public class OrgCompanyDtl {
+    public int od_id;
     public String od_oc_code;
     public String od_faRen;
     public double od_regM;
