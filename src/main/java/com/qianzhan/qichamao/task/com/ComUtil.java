@@ -1,10 +1,9 @@
 package com.qianzhan.qichamao.task.com;
 
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.api.EsCompanySearcher;
 import com.qianzhan.qichamao.dal.RedisClient;
-import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
 import com.qianzhan.qichamao.entity.EsCompanyTripleMatch;
-import com.qianzhan.qichamao.util.MiscellanyUtil;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,7 +1,6 @@
 package com.qianzhan.qichamao.dal.es;
 
 import com.qianzhan.qichamao.util.DbConfigBus;
-import com.qianzhan.qichamao.util.*;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;

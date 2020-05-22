@@ -1,11 +1,11 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.entity.OrgCompanyList;
 import com.qianzhan.qichamao.task.stat.BrowseCount;
 import com.qianzhan.qichamao.task.stat.CompanyStatisticsInfo;
+import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class EsCompanyWriter extends BaseWriter {
                 postHooks.add(() -> MongodbCompanyWriter.writeDtl2Db(tasks_key));
             }
             if ((task & TaskType.arango.getValue()) != 0) {
-                postHooks.add(() -> ArangodbCompanyWriter.upsert_static(tasks_key, state));
+                postHooks.add(() -> ArangodbCompanyWriter.upsert_static(tasks_key));
             }
         }
         postHooks.add(() -> SharedData.closeBatch(tasks_key));

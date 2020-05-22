@@ -22,6 +22,8 @@ public class MiscellanyUtil {
         return true;
     }
 
+
+
 //    public static String trimNonChinese(String text) {
 //        if (isBlank(text)) return null;
 //
@@ -70,7 +72,7 @@ public class MiscellanyUtil {
         for (int i = 1; i < text1.length()+1; ++i) {
             for (int j = 1; j < text2.length()+1; ++j) {
                 int d = text1.charAt(i-1) == text2.charAt(j-1) ? 0 : 1;
-                matrix[i][j] = min(matrix[i-1][j]+1, matrix[i][j-1]+1, matrix[i-1][j+1]+d);
+                matrix[i][j] = min(matrix[i-1][j]+1, matrix[i][j-1]+1, matrix[i-1][j-1]+d);
             }
         }
         return matrix[text1.length()][text2.length()];

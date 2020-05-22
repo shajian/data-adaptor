@@ -1,8 +1,10 @@
 package com.qianzhan.qichamao.task.com;
 
 import com.qianzhan.qichamao.config.BaseConfigBus;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
+import com.qianzhan.qichamao.config.GlobalConfig;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
+import lombok.Setter;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.Date;
@@ -22,6 +24,12 @@ public abstract class BaseWriter {
     protected List<ComHook> preHooks;
     protected List<ComHook> postHooks;
     protected int[] tasks;
+    // whether app was closed manually
+    @Setter
+    private boolean shutdown;
+    // notice outer that current task had been exited safely.
+    @Setter
+    private boolean notice;
     protected int batch;
     private Pattern[] filter_outs;
     /**
@@ -37,6 +45,8 @@ public abstract class BaseWriter {
 
     public BaseWriter(String file) throws Exception {
         config = new BaseConfigBus(file);
+        int env = config.getInt("env", -1);
+        if (env > 0) GlobalConfig.setEnv((byte)env);
         batch = config.getInt("batch", 1000);
         state = config.getInt("state", 1);
         tasks_key = config.getString("tasks_key");
@@ -148,7 +158,7 @@ public abstract class BaseWriter {
                 System.out.println("checkpoint reset to 0");
             }
         }
-        System.out.println("start to create...");
+        System.out.println("start to state...");
         int num = 0;
         while (state_iter()) {
             num++;
@@ -156,10 +166,33 @@ public abstract class BaseWriter {
                 System.out.println(String.format("state: %d, %s: %d @ %s",
                         state, checkpointName, checkpoint, new Date()));
             }
+            if (shutdown) {
+                notice = true;
+                break;
+            }
         }
     }
 
-
+    public void exitSafely() {
+        shutdown = true;
+        System.out.println("app will be closed, please wait...");
+        int i = 0;
+        try {
+            while (i < 10) {
+                if (notice) break;
+                Thread.sleep(500);
+                i++;
+            }
+            if (!notice) {
+                // if has not received notice, wait for another 2s
+                System.out.println("app will exit after 5s");
+                Thread.sleep(5000);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        // exit
+    }
 
     private boolean state_iter() {
         if (preHooks != null) {

@@ -289,6 +289,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
 
     private QueryBuilder filter(EsCompanyInput input) {
         BoolQueryBuilder bool = QueryBuilders.boolQuery();
+        if (input.getFilters() == null) return bool;
         for (String field : input.getFilters().keySet()) {
             String[] values = input.getFilters().get(field);
             switch (field) {

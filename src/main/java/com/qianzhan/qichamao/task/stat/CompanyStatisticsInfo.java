@@ -1,9 +1,9 @@
 package com.qianzhan.qichamao.task.stat;
 
 import com.qianzhan.qichamao.collection.AdaFitHistogram;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.OrgCompanyStatisticsInfo;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
 import java.io.*;
 import java.util.ArrayList;

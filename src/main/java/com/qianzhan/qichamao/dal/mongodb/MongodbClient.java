@@ -4,20 +4,15 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.bulk.BulkWriteResult;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
 import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
-import com.mongodb.internal.bulk.IndexRequest;
-import com.mongodb.internal.operation.CreateIndexesOperation;
+import com.qianzhan.qichamao.util.BeanUtil;
+import com.qianzhan.qichamao.util.DbConfigBus;
 import com.qianzhan.qichamao.entity.MongoComContact;
 import com.qianzhan.qichamao.entity.MongoComDtl;
 import com.qianzhan.qichamao.entity.MongoPersonAgg;
-import com.qianzhan.qichamao.util.BeanUtil;
-import com.qianzhan.qichamao.util.DbConfigBus;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -57,6 +52,7 @@ public class MongodbClient {
         client = MongoClients.create(settings);
     }
 
+
     protected String coll;
 
     public MongodbClient(String coll) {
@@ -66,7 +62,32 @@ public class MongodbClient {
     public void createIndex(boolean unique, String... fields) {
         MongoDatabase db = client.getDatabase(CompanyDatabase);
         MongoCollection<Document> collection = db.getCollection(this.coll);
+        MongoCursor<Document> cursor = collection.listIndexes().iterator();
+
+        while (cursor.hasNext()) {
+            Document doc = cursor.next();
+            String name = doc.getString("name");
+            for (String field : fields) {
+                if (name.contains(field))
+                    return;
+            }
+        }
         collection.createIndex(Indexes.descending(fields), new IndexOptions().unique(unique));
+    }
+
+    public void createFulltextIndex(String field) {
+        MongoDatabase db = client.getDatabase(CompanyDatabase);
+        MongoCollection<Document> collection = db.getCollection(this.coll);
+        collection.createIndex(Indexes.text(field));
+    }
+
+    public void dropIndex(String index) {
+        MongoDatabase db = client.getDatabase(CompanyDatabase);
+        MongoCollection<Document> collection = db.getCollection(this.coll);
+        collection.dropIndex(index);
+//        if (!collection.listIndexes().iterator().hasNext()) {
+//            collection.createIndex(Indexes.descending(fields), new IndexOptions().unique(unique));
+//        }
     }
 
     public List<MongoComDtl> find(List<String> ids) {
@@ -83,7 +104,7 @@ public class MongodbClient {
         MongoDatabase db = client.getDatabase(CompanyDatabase);
         MongoCollection<Document> collection = db.getCollection(this.coll);
         List<MongoComContact> cs = new ArrayList<>();
-        for (Document doc : collection.find(in(field, values)).projection(Projections.include(includes))) {
+        for (Document doc : collection.find(eq(field, values.get(0))).projection(Projections.include(includes))) {
             cs.add(BeanUtil.doc2Obj(doc, MongoComContact.class));
         }
         return cs;

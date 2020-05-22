@@ -3,7 +3,6 @@ package com.qianzhan.qichamao.dal.arangodb;
 import com.arangodb.ArangoDB;
 import com.qianzhan.qichamao.util.DbConfigBus;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
-import lombok.Getter;
 
 public class ArangoClient {
     private static ArangoDB client = null;

@@ -1,10 +1,8 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
-import com.qianzhan.qichamao.entity.EsComStat;
 import com.qianzhan.qichamao.entity.EsCompany;
-import com.qianzhan.qichamao.entity.EsGeoPoint;
 import com.qianzhan.qichamao.entity.OrgCompanyGeo;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import org.elasticsearch.common.geo.GeoPoint;
 
 public class ComGeo extends ComBase {

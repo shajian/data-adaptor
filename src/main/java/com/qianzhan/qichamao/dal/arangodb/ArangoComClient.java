@@ -8,8 +8,8 @@ import com.arangodb.entity.EdgeDefinition;
 import com.arangodb.model.DocumentCreateOptions;
 import com.qianzhan.qichamao.entity.ArangoCpED;
 import com.qianzhan.qichamao.entity.ArangoCpVD;
-import com.qianzhan.qichamao.entity.ArangoCpPath;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
+import com.qianzhan.qichamao.graph.ArangoGraphPath;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -101,18 +101,24 @@ public class ArangoComClient {
         if (MiscellanyUtil.isArrayEmpty(vds)) return;
         ArangoDatabase db = client.db(dbName);
         ArangoCollection coll = db.collection(vertexCollName);
-        coll.insertDocuments(vds, new DocumentCreateOptions());
+        coll.insertDocuments(vds, new DocumentCreateOptions().overwrite(true));
     }
 
     public void bulkInsert_ED(List<BaseEdgeDocument> eds) {
         if (MiscellanyUtil.isArrayEmpty(eds)) return;
         ArangoDatabase db = client.db(dbName);
         ArangoCollection coll = db.collection(edgeCollName);
-        coll.insertDocuments(eds, new DocumentCreateOptions());
+        coll.insertDocuments(eds, new DocumentCreateOptions().overwrite(true));
     }
 
+//    public void insert_ED(BaseEdgeDocument ed) {
+//        ArangoDatabase db = client.db(database);
+//        ArangoCollection coll = db.collection(edgeCollName);
+//        coll.insertDocument(ed, new DocumentCreateOptions().);
+//    }
 
-    public void bulkDelete_ED(List<String> keys) {
+
+    public void bulkDelete_ED(Collection<String> keys) {
         if (MiscellanyUtil.isArrayEmpty(keys)) return;
         ArangoDatabase db = client.db(dbName);
         ArangoCollection coll = db.collection(edgeCollName);
@@ -126,7 +132,7 @@ public class ArangoComClient {
         coll.deleteDocument(key);
     }
 
-    public List<String> neighbours(String to) {
+    public List<String> neighbours2(String to) {
         ArangoDatabase db = client.db(dbName);
         String aql = "FOR e in " + edgeCollName + " FILTER d._to == '%s' RETURN e._from";
         ArangoCursor<String> cursor = db.query(String.format(aql, to), String.class);
@@ -244,7 +250,7 @@ public class ArangoComClient {
         }
     }
 
-    public void upsert_ED(List<ArangoCpED> edges) {
+    public void upsert_ED(Collection<ArangoCpED> edges) {
         if (MiscellanyUtil.isArrayEmpty(edges)) return;
         ArangoDatabase db = client.db(dbName);
         for (ArangoCpED e : edges) {
@@ -271,18 +277,21 @@ public class ArangoComClient {
         return keys;
     }
 
-    public List<String> chain_VD(ArangoComInput input) {
+    public List<ArangoCpVD> chain_VD(ArangoComInput input) {
         ArangoDatabase db = client.db(dbName);
         String aql = String.format(
                 "FOR v, e IN %d..%d ANY '%s' GRAPH '%s' %s OPTIONS { bfs: true, uniqueVertices: 'global' } " +
-                        "%s RETURN v._id ",
+                        "%s RETURN v ",
                 input.getMinDepth(), input.getMaxDepth(), input.getStart_id(), graphName, input.getPrune(),
                 input.getFilter()
         );
-        ArangoCursor<String> cursor = db.query(aql, String.class);
-        List<String> keys = new ArrayList<>();
-        while (cursor.hasNext()) {
-            keys.add(cursor.next());
+        ArangoCursor<BaseDocument> cursor = db.query(aql, BaseDocument.class);
+        List<ArangoCpVD> vertices = new ArrayList<>();
+        Integer total = cursor.getCount();
+        List<BaseDocument> docs = cursor.asListRemaining();
+        for (BaseDocument doc : docs) {
+            if (doc == null) continue;
+            vertices.add(ArangoCpVD.from(doc));
         }
 
         try {
@@ -290,7 +299,21 @@ public class ArangoComClient {
         } catch (Exception e) {
 
         }
-        return keys;
+        return vertices;
+    }
+
+    public List<ArangoCpED> neighbours(String id) {
+        if (MiscellanyUtil.isBlank(id)) return null;
+
+        ArangoDatabase db = client.db(dbName);
+        String aql = "FOR e in " + edgeCollName + " FILTER e._to == '%s' OR e._from == '%s' RETURN e";
+        ArangoCursor<BaseEdgeDocument> cursor = db.query(String.format(aql, id, id), BaseEdgeDocument.class);
+        List<ArangoCpED> edges = new ArrayList<>();
+        while (cursor.hasNext()) {
+            edges.add(ArangoCpED.from(cursor.next()));
+        }
+
+        return edges;
     }
 
     /**
@@ -300,7 +323,7 @@ public class ArangoComClient {
      * @param maxDepth
      * @return
      */
-    public List<ArangoCpPath> traverse_VE(String start_key, int minDepth, int maxDepth) {
+    public List<ArangoGraphPath> traverse_VE(String start_key, int minDepth, int maxDepth) {
         if (minDepth < 1) minDepth = 1;
         if (maxDepth < minDepth) maxDepth = minDepth;
         ArangoDatabase db = client.db(dbName);
@@ -315,11 +338,11 @@ public class ArangoComClient {
                 minDepth, maxDepth, vertexCollName, start_key, graphName
         );
         ArangoCursor<String> cursor = db.query(aql, String.class);
-        List<ArangoCpPath> paths = new ArrayList<>();
+        List<ArangoGraphPath> paths = new ArrayList<>();
         while (cursor.hasNext()) {
             String json = cursor.next();
 
-            paths.add(JSON.parseObject(json, ArangoCpPath.class));
+            paths.add(JSON.parseObject(json, ArangoGraphPath.class));
         }
 
         try {

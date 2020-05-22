@@ -1,13 +1,11 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.dal.es.EsCompanyInput;
-import com.qianzhan.qichamao.dal.mongodb.MongoClientRegistry;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
-import com.qianzhan.qichamao.entity.EsComStat;
 import com.qianzhan.qichamao.entity.EsCompany;
-import com.qianzhan.qichamao.entity.MongoComContact;
 import com.qianzhan.qichamao.entity.OrgCompanyContact;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
+import com.qianzhan.qichamao.dal.mongodb.MongoClientRegistry;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
+import com.qianzhan.qichamao.entity.MongoComContact;
 
 import java.util.*;
 
@@ -61,6 +59,7 @@ public class ComContact extends ComBase {
                 if (cs.size() > 0) {
                     Set<String> codes = getMongoComContacts(cs);
                     if (codes.size() > 1) {
+                        System.out.println(oc_code + " has same contacts with: " + String.join(",", codes));
                         compack.a_com.setContacts(codes);
                     }
                 }

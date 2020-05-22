@@ -1,11 +1,14 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.dal.RedisClient;
-import com.qianzhan.qichamao.dal.mongodb.MongoClientRegistry;
+import com.qianzhan.qichamao.config.GlobalConfig;
+import com.qianzhan.qichamao.graph.ArangoBusinessCompany;
+import com.qianzhan.qichamao.graph.ArangoBusinessPerson;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
-import com.qianzhan.qichamao.entity.*;
-import com.qianzhan.qichamao.util.*;
-import redis.clients.jedis.Jedis;
+import com.qianzhan.qichamao.entity.ArangoCpVD;
+import com.qianzhan.qichamao.entity.OrgCompanyDtlGD;
+import com.qianzhan.qichamao.entity.OrgCompanyGsxtDtlGD;
+import com.qianzhan.qichamao.util.MiscellanyUtil;
+import com.qianzhan.qichamao.util.NLP;
 
 import java.util.*;
 
@@ -61,33 +64,31 @@ public class ComShareHolder extends ComBase {
                     if (flag == 1) {    // company-type senior member
                         List<String> codeAreas = ComUtil.getCodeAreas(key);
                         if (codeAreas.isEmpty()) {
-                            compack.a_com.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 1), money, ratio, dist, false);
+                            if (GlobalConfig.getEnv() == 1) {
+                                compack.a_com.oldPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 1), money, ratio, dist, false);
+                            } else {
+                                compack.a_com.setShare_holder(new ArangoBusinessCompany(key), money, ratio);
+                            }
                         } else {
-
-//                            // store many companies sharing the same name into mongodb
-//                            if (codeAreas.size() > 1) {
-//                                MongoComShareName sn = new MongoComShareName();
-//                                sn.name = key;
-//                                sn.codes = codeAreas;
-//                                sn._id = Cryptor.md5(sn.name);
-//                                try {
-//                                    MongoClientRegistry.client(MongoClientRegistry.CollName.sharename)
-//                                            .insert(BeanUtil.obj2Doc(sn));
-//                                } catch (Exception e) { // maybe the doc has been inserted already
-//                                    e.printStackTrace();
-//                                }
-//                            }
-
-                            boolean share = codeAreas.size() > 1;
-                            for (String codeArea : codeAreas) {
-                                String code = codeArea.substring(0, 9);
-                                String oc_area = codeArea.substring(9);
-                                compack.a_com.setShare_holder(oc_code, new ArangoCpVD(code, key, oc_area), money, ratio, dist, share);
+                            if (GlobalConfig.getEnv() == 1) {
+                                boolean share = codeAreas.size() > 1;
+                                for (String codeArea : codeAreas) {
+                                    String code = codeArea.substring(0, 9);
+                                    String oc_area = codeArea.substring(9);
+                                    compack.a_com.oldPack.setShare_holder(oc_code, new ArangoCpVD(code, key, oc_area), money, ratio, dist, share);
+                                }
+                            } else {
+                                String ca = codeAreas.get(0);
+                                compack.a_com.setShare_holder(new ArangoBusinessCompany(ca.substring(0,9), key, ca.substring(9)), money, ratio);
                             }
                         }
 
                     } else if (flag == 2) {
-                        compack.a_com.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 2), money, ratio, dist,false);
+                        if (GlobalConfig.getEnv() == 1) {
+                            compack.a_com.oldPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 2), money, ratio, dist, false);
+                        } else {
+                            compack.a_com.setShare_holder(new ArangoBusinessPerson(key, oc_code), money, ratio);
+                        }
                     }
                 }
             }

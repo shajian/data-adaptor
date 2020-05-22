@@ -1,22 +1,22 @@
 package com.qianzhan.qichamao.task.com;
 
+import com.qianzhan.qichamao.entity.OrgCompanyContact;
+import com.qianzhan.qichamao.util.BeanUtil;
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.dal.mongodb.MongoClientRegistry;
 import com.qianzhan.qichamao.dal.mongodb.MongodbClient;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.MongoComContact;
 import com.qianzhan.qichamao.entity.MongoComDtl;
-import com.qianzhan.qichamao.entity.OrgCompanyContact;
-import com.qianzhan.qichamao.util.BeanUtil;
-import com.qianzhan.qichamao.util.MiscellanyUtil;
 import org.bson.Document;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class MongodbCompanyWriter extends BaseWriter {
 
     public MongodbCompanyWriter() throws Exception {
-        super("MongoCompany.txt");
+        super("config/MongoCompany.txt");
+        checkpointName = "data-adaptor.mongo.company";
     }
     /**
      * for state==1, this task is attached to EsCompanyWriter, and
@@ -42,6 +42,7 @@ public class MongodbCompanyWriter extends BaseWriter {
 
     protected void state3_pre() {
         MongodbClient client = MongoClientRegistry.client("contact");
+
         client.createIndex(true, "code", "contact");
     }
 
@@ -50,21 +51,34 @@ public class MongodbCompanyWriter extends BaseWriter {
         if (contacts.size() == 0) return false;
 
         List<Document> cs = new ArrayList<>();
+        Set<String> ids = new HashSet<>();
         for (OrgCompanyContact contact : contacts) {
             checkpoint = contact.ID;
+            contact.oc_contact = contact.oc_contact.replaceAll("\\s", "");
             if (MiscellanyUtil.isBlank(contact.oc_contact)) continue;
             if (!validateCode(contact.oc_code)) continue;
+            if (contact.oc_status != 1) continue;
 
             MongoComContact c = new MongoComContact();
             c.code = contact.oc_code;
             c.contact = contact.oc_contact;
             c.type = contact.oc_type;
             c._id = c.code + c.contact;
-
-            cs.add(BeanUtil.bean2Doc(c));
+            if (!ids.contains(c._id)) {
+                ids.add(c._id);
+                cs.add(BeanUtil.bean2Doc(c));
+            }
         }
-
-        MongoClientRegistry.client("contact").insert(cs);
+        try {
+            MongoClientRegistry.client("contact").insert(cs);
+        } catch (com.mongodb.MongoBulkWriteException | com.mongodb.MongoWriteException e) {
+//            System.out.println("sequentially insert docs into mongodb");
+            for (Document doc : cs) {
+                try {
+                    MongoClientRegistry.client("contact").insert(doc);
+                } catch (com.mongodb.MongoWriteException ie) { }
+            }
+        }
         return true;
     }
 }

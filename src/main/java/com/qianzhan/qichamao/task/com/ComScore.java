@@ -1,11 +1,11 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.entity.OrgCompanyStatisticsInfo;
 import com.qianzhan.qichamao.task.stat.BrowseCount;
 import com.qianzhan.qichamao.task.stat.CompanyStatisticsInfo;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
 public class ComScore extends ComBase {
     public ComScore(String key) {
@@ -54,7 +54,7 @@ public class ComScore extends ComBase {
      * B: Award
      * company operating status-normal: +2
      * company statistics info: [0-5] for dimension; there are 21 dimensions totally: [0-105]
-     * company located at (new)first-level city: 2
+     * company located at (new)first-env city: 2
      * company with phone-numbers: 4
      * company with mails: 2
      * company browse count: [0-10]

@@ -1,15 +1,16 @@
 package com.qianzhan.qichamao.entity;
 
 import com.arangodb.entity.BaseDocument;
-import com.arangodb.entity.DocumentField;
 import com.qianzhan.qichamao.util.Cryptor;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import lombok.Getter;
 
-import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Getter
+@Deprecated
 public class ArangoCpVD {
     /**
      * vertex collection name + "/" + key
@@ -27,6 +28,8 @@ public class ArangoCpVD {
     private String key;
     private String name;
     private String area;
+    // used for sort
+    private long degree;
     /**
      * 1: company
      * 2: person
@@ -78,12 +81,25 @@ public class ArangoCpVD {
         v.key = doc.getKey();
         v.id = doc.getId();
         Map<String, Object> props = doc.getProperties();
-        if (props.containsKey("type")) {
-            v.type = (Integer) props.get("type");
+        Object tp = props.get("type");
+        if (tp != null) {
+            long tp_l = (Long) tp;
+            v.type = (int) tp_l;
         }
+
         v.area = (String) props.get("area");
         v.name = (String) props.get("name");
         return v;
+    }
+
+    public static List<ArangoCpVD> from(List<BaseDocument> docs) {
+        if (MiscellanyUtil.isArrayEmpty(docs)) return null;
+        List<ArangoCpVD> vds = new ArrayList<>();
+        for (BaseDocument doc : docs) {
+            if (doc == null) continue;
+            vds.add(ArangoCpVD.from(doc));
+        }
+        return vds;
     }
 
     /**
@@ -92,6 +108,7 @@ public class ArangoCpVD {
      * @param coll the collection name
      * @return
      */
+    @Deprecated
     public String upsertAql(String coll) {
         String aql = "UPSERT { _key: '%s' } INSERT { _key: '%s', name: '%s', type: %d";
         if (type == 2) {    // person, no need to store `area`

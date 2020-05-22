@@ -138,7 +138,7 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
         EsAggSetting aggs = input.getAggs();
         aggs.shrink(input.getFilters());
         List<AggregationBuilder> list = new ArrayList<>();
-        // simple: one-level aggregations
+        // simple: one-env aggregations
         if (aggs.getTerms() != null) {
             for (String field : aggs.getTerms()) {
                 TermsAggregationBuilder term = AggregationBuilders.terms(field).field(field);
@@ -205,7 +205,7 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
             }
         }
 
-        // complex: two-level aggregations
+        // complex: two-env aggregations
         if (aggs.getDouble_terms() != null) {
 
         }

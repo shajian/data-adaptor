@@ -97,19 +97,19 @@ public class EsCompany {
     private String tag_2;
     @EsFieldMeta(doc_values = false)
     private String tag_3;
-    @EsFieldMeta(doc_values = false, type = EsFieldType.integer)
+    @EsFieldMeta(type = EsFieldType.integer)
     private int score_1;
-    @EsFieldMeta(doc_values = false, type = EsFieldType.integer)
+    @EsFieldMeta(type = EsFieldType.integer)
     private int score_2;
-    @EsFieldMeta(doc_values = false, type = EsFieldType.integer)
+    @EsFieldMeta(type = EsFieldType.integer)
     private int score_3;
 
     /**
      * comprehend score for each document
      */
-    @EsFieldMeta(doc_values = false, type = EsFieldType.integer)
+    @EsFieldMeta(type = EsFieldType.integer)
     private int score;
-    @EsFieldMeta(doc_values = false, type=EsFieldType.Double)
+    @EsFieldMeta(type=EsFieldType.Double)
     private double weight;
 
     public void loadFrom(OrgCompanyList c) {

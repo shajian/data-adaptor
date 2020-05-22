@@ -19,7 +19,7 @@ public class NLP {
      * @return
      */
     public static int recognizeName(String text) {
-        if (MiscellanyUtil.isBlank(text)) return 0;
+        if (MiscellanyUtil.isBlank(text) || text.length() < 2) return 0;
         List<Term> terms = segment.seg(text);
         boolean is_short = text.length() < 8;
         boolean person = false;

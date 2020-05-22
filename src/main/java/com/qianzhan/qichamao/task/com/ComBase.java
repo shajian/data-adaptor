@@ -2,11 +2,9 @@ package com.qianzhan.qichamao.task.com;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.elasticsearch.common.util.concurrent.CountDown;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
 /**

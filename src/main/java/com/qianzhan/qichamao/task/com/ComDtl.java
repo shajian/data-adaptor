@@ -1,12 +1,16 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.dal.mongodb.MongoClientRegistry;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
-import com.qianzhan.qichamao.entity.*;
-import com.qianzhan.qichamao.util.BeanUtil;
-import com.qianzhan.qichamao.util.Cryptor;
+import com.qianzhan.qichamao.config.GlobalConfig;
+import com.qianzhan.qichamao.graph.ArangoBusinessCompany;
+import com.qianzhan.qichamao.graph.ArangoBusinessPack;
+import com.qianzhan.qichamao.graph.ArangoBusinessPerson;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.util.NLP;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
+import com.qianzhan.qichamao.entity.MongoComDtl;
+import com.qianzhan.qichamao.entity.ArangoCpVD;
+import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.entity.OrgCompanyDtl;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -23,7 +27,7 @@ public class ComDtl extends ComBase {
     public void run() {
         EsCompany e_com = compack.e_com;
         MongoComDtl m_com = compack.m_com;
-        ArangoCpPack a_com = compack.a_com;
+        ArangoBusinessPack a_com = compack.a_com;
         String oc_code = null;
         if (e_com != null) oc_code = e_com.getOc_code();
         else if (e_com!=null) oc_code = m_com.get_id();
@@ -67,35 +71,34 @@ public class ComDtl extends ComBase {
                         // try to get oc_code of this company-type legal person
                         List<String> codeAreas = ComUtil.getCodeAreas(dtl.od_faRen);
 
-                        if (codeAreas.isEmpty()) {
-                            a_com.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 1), false);
+                        if (codeAreas.isEmpty()) {      // this company is unknown
+                            if (GlobalConfig.getEnv() == 1) {
+                                a_com.oldPack.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 1), false);
+                            } else {
+                                a_com.setLp(new ArangoBusinessCompany(dtl.od_faRen));
+                            }
                         } else {
-
-//                            // store many companies sharing the same name into mongodb
-//                            if (codeAreas.size() > 1) {
-//                                MongoComShareName sn = new MongoComShareName();
-//                                sn.name = dtl.od_faRen;
-//                                sn.codes = codeAreas;
-//                                sn._id = Cryptor.md5(sn.name);
-//                                try {
-//                                    MongoClientRegistry.client(MongoClientRegistry.CollName.sharename)
-//                                            .insert(BeanUtil.obj2Doc(sn));
-//                                } catch (Exception e) { // maybe the doc has been inserted already
-//                                    e.printStackTrace();
-//                                }
-//                            }
-
-                            boolean share = codeAreas.size() > 1;
-                            for (String codeArea : codeAreas) {
-                                String code = codeArea.substring(0, 9);
-                                String area = codeArea.substring(9);
-                                // set legal person
-                                a_com.setLp(oc_code, new ArangoCpVD(code, dtl.od_faRen, area), share);
+                            if (GlobalConfig.getEnv() == 1) {
+                                boolean share = codeAreas.size() > 1;
+                                for (String codeArea : codeAreas) {
+                                    String code = codeArea.substring(0, 9);
+                                    String area = codeArea.substring(9);
+                                    // set legal person
+                                    a_com.oldPack.setLp(oc_code, new ArangoCpVD(code, dtl.od_faRen, area), share);
+                                }
+                            } else {
+                                String codeArea = codeAreas.get(0);
+                                a_com.setLp(new ArangoBusinessCompany(
+                                        codeArea.substring(0,9), dtl.od_faRen, codeArea.substring(9)));
                             }
                         }
 
                     } else if (flag == 2) {
-                        a_com.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 2), false);
+                        if (GlobalConfig.getEnv() == 1) {
+                            a_com.oldPack.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 2), false);
+                        } else {
+                            a_com.setLp(new ArangoBusinessPerson(dtl.od_faRen, oc_code));
+                        }
                     }
                 }
                 if (compack.r_com != null) {

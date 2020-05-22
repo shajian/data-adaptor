@@ -68,7 +68,7 @@ public class EsBaseInput<T> {
     @Getter@Setter
     private String sortField = "_score";
     @Getter@Setter
-    private SortOrder sortOrder;
+    private SortOrder sortOrder = SortOrder.DESC;
 
 //    /**
 //     * if supports page accessing randomly

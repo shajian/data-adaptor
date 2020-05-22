@@ -1,7 +1,7 @@
 package com.qianzhan.qichamao.dal.mybatis;
 
 import com.qianzhan.qichamao.entity.*;
-import com.qianzhan.qichamao.entity.*;
+import com.qichamao.entity.*;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

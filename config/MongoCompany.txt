@@ -1,4 +1,4 @@
-state=1
+state=3
 
 # multi_thread mode?
 multi_thread=true
@@ -9,7 +9,7 @@ max_threads=0
 # the ratio between size of queue and `batch`
 thread_queue_size_ratio=10
 
-batch=4096
+batch=1024
 # refer to task.com.TaskType for task numbers
 tasks=2
 # indicates the key, and `tasks` item with regards to this key depends the kind of ComPack

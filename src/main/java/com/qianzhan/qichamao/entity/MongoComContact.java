@@ -1,7 +1,10 @@
 package com.qianzhan.qichamao.entity;
 
-import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class MongoComContact {
     public String _id;  // code+type+contact
 

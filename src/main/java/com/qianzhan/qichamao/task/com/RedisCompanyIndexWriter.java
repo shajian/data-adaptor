@@ -1,13 +1,13 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.dal.RedisClient;
-import com.qianzhan.qichamao.dal.arangodb.ArangoComClient;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.ArangoCpPack;
 import com.qianzhan.qichamao.entity.ArangoCpVD;
 import com.qianzhan.qichamao.entity.OrgCompanyList;
 import com.qianzhan.qichamao.entity.RedisCompanyIndex;
 import com.qianzhan.qichamao.util.DbConfigBus;
+import com.qianzhan.qichamao.dal.RedisClient;
+import com.qianzhan.qichamao.dal.arangodb.ArangoComClient;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
 import java.util.*;
 
@@ -42,7 +42,7 @@ public class RedisCompanyIndexWriter extends BaseWriter {
         for (int task : tasks) {
             if ((task & TaskType.arango.getValue()) != 0) {
                 preHooks.add(()-> ArangoComClient.getSingleton().initGraph());
-                postHooks.add(()->ArangodbCompanyWriter.upsert_static(tasks_key, state));
+                postHooks.add(()->ArangodbCompanyWriter.upsert_static(tasks_key));
             }
         }
         postHooks.add(() -> SharedData.closeBatch(tasks_key));

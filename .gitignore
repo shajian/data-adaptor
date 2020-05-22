@@ -11,3 +11,4 @@ data/
 *.iml
 **.private
 data
+*.log

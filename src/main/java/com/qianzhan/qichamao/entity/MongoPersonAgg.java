@@ -19,7 +19,8 @@ public class MongoPersonAgg {
      */
     public byte status;
 
-
+    public List<String> code1s;
+    public List<String> code2s;
 
     // mongodb id
     public String _id;  // composed by code1+code2+name

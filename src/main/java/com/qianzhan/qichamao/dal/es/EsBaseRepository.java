@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class EsBaseRepository<T> {
+public abstract class EsBaseRepository<T> {
     protected RestHighLevelClient client;
     protected Class<T> clazz;
     @Getter
@@ -50,6 +50,8 @@ public class EsBaseRepository<T> {
         clazz = (Class<T>) type.getActualTypeArguments()[0];
         indexMeta = clazz.getAnnotation(EsIndexMeta.class);
     }
+
+
 
     public void updateIndexSetting() {
         EsIndexSetting setting = new EsIndexSetting().set(indexMeta.index());

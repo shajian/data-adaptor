@@ -1,8 +1,8 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.entity.OrgCompanyIndustry;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
 import java.util.*;
 

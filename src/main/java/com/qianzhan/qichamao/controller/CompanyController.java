@@ -1,10 +1,10 @@
 package com.qianzhan.qichamao.controller;
 
-import com.qianzhan.qichamao.api.EsCompanySearcher;
 import com.qianzhan.qichamao.api.RedisCompanySearcher;
+import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.api.EsCompanySearcher;
 import com.qianzhan.qichamao.dal.es.EsCompanyInput;
 import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
-import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.entity.EsCompanyTripleMatch;
 import org.springframework.web.bind.annotation.*;
 

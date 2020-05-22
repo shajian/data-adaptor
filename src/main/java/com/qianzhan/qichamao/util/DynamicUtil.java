@@ -1,7 +1,5 @@
 package com.qianzhan.qichamao.util;
 
-import org.bson.types.ObjectId;
-
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URL;

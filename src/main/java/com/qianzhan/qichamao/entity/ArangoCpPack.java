@@ -8,6 +8,7 @@ import java.util.*;
  *  the different field (such as `share_holders` and `senior_members`)
  * In a word, no synchronization is needed.
  */
+@Deprecated
 public class ArangoCpPack {
     public String oc_code;
     public String oc_area;
@@ -32,9 +33,11 @@ public class ArangoCpPack {
     public void setContacts(Set<String> codes) {
         contact_edges = new ArrayList<>();
         for (String code : codes) {
-            if (code.equals(oc_code)) continue;
-
-            ArangoCpED e = new ArangoCpED("cp/"+oc_code, "cp/"+code, "ct"+oc_code+code, 4, false);
+            int r = oc_code.compareTo(code);
+            if (r == 0) continue;
+            String from = r < 0 ? code : oc_code;
+            String to = r < 0 ? oc_code : code;
+            ArangoCpED e = new ArangoCpED("cp/"+from, "cp/"+to, "ct"+from+to, 4, false);
 
             contact_edges.add(e);
         }

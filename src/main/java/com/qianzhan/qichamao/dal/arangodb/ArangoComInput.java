@@ -13,8 +13,8 @@ public class ArangoComInput {
     private int minDepth;
     private int maxDepth;
 
-    private String filter;
-    private String prune;
+    private String filter = "";
+    private String prune = "";
     private String return_;
 
     public ArangoComInput(String start_id, int maxDepth) {

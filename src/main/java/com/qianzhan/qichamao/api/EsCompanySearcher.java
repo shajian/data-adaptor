@@ -1,11 +1,9 @@
 package com.qianzhan.qichamao.api;
 
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.dal.es.EsCompanyInput;
 import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
-import com.qianzhan.qichamao.entity.EsCompany;
-import com.qianzhan.qichamao.entity.EsCompanyMatch;
 import com.qianzhan.qichamao.entity.EsCompanyTripleMatch;
-import com.qianzhan.qichamao.util.MiscellanyUtil;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -26,6 +24,7 @@ public class EsCompanySearcher {
         EsCompanyRepository es = EsCompanyRepository.singleton();
         EsCompanyInput input = new EsCompanyInput();
         input.setKeyword(name);
+        input.setSortField("establish_date");
         input.setFields("oc_name");
         input.setSize(5);           // get top 5 documents
         input.setSrc_inc("oc_name", "oc_code", "oc_area", "oc_status");
@@ -94,7 +93,7 @@ public class EsCompanySearcher {
         List<EsCompanyTripleMatch> matches = new ArrayList<>();
         for (SearchHit hit : resp.getHits().getHits()) {
             Map map = hit.getSourceAsMap();
-            Byte oc_status = (Byte) map.get("oc_status");
+            Number oc_status = (Number) map.get("oc_status");
             String dname = (String)map.get("oc_name");
 
             EsCompanyTripleMatch match = new EsCompanyTripleMatch();
@@ -102,7 +101,7 @@ public class EsCompanySearcher {
             match.setOc_area((String)map.get("oc_area"));
             match.setOc_name(dname);
             if (oc_status != null) {
-                match.setOc_status(oc_status);
+                match.setOc_status(oc_status.byteValue());
             }
             int dist = MiscellanyUtil.getEditDistanceSafe(dname, name);
             if (dist == 0) {

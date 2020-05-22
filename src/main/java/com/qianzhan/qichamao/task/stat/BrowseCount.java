@@ -2,9 +2,9 @@ package com.qianzhan.qichamao.task.stat;
 
 import com.qianzhan.qichamao.collection.AdaFitHistogram;
 import com.qianzhan.qichamao.config.BaseConfigBus;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.OrgBrowseLog;
 import com.qianzhan.qichamao.entity.RetrieveRange;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
 import java.util.Date;
 import java.util.HashMap;

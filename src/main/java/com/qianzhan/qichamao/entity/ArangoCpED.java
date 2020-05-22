@@ -2,14 +2,16 @@ package com.qianzhan.qichamao.entity;
 
 import com.arangodb.entity.BaseEdgeDocument;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
-import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Getter
 @Setter
+@Deprecated
 public class ArangoCpED {
     private String id;
     private String key;
@@ -62,8 +64,10 @@ public class ArangoCpED {
         e.from = doc.getFrom();
         e.to = doc.getTo();
         Map<String, Object> props = doc.getProperties();
-        e.type = (Integer) props.get("type");
-        e.dist = (Integer) props.get("dist");
+        long type = (Long) props.get("type");
+        e.type = (int) type;
+        long dist = (Long) props.get("dist");
+        e.dist = (int) dist;
         Object share = props.get("share");
         if (share != null) {
             e.share = (Boolean) share;
@@ -74,10 +78,20 @@ public class ArangoCpED {
         }
         Object ratio = props.get("ratio");
         if (ratio != null) {
-            e.ratio = (Float) ratio;
+            double r = (Double) ratio;
+            e.ratio = (float) r;
         }
         e.position = (String) props.get("position");
         return e;
+    }
+    public static List<ArangoCpED> from(List<BaseEdgeDocument> docs) {
+        if (MiscellanyUtil.isArrayEmpty(docs)) return null;
+        List<ArangoCpED> eds = new ArrayList<>();
+        for (BaseEdgeDocument doc : docs) {
+            if (doc == null) continue;
+            eds.add(ArangoCpED.from(doc));
+        }
+        return eds;
     }
 
     public BaseEdgeDocument to() {
