@@ -9,10 +9,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ComPack {
-    public EsCompany e_com;
-    public MongoComDtl m_com;
-    public RedisCompanyIndex r_com;
-    public ArangoBusinessPack a_com;
+    public EsCompany es;
+    public MongoComDtl mongo;
+    public RedisCompanyIndex redis;
+    public ArangoBusinessPack arango;
 
 
     private static Map<String, int[]> tts = new HashMap<>();
@@ -20,23 +20,23 @@ public class ComPack {
     public static void registerTasktype(String key, int[] tasks) {
         tts.put(key, tasks);
     }
-    public ComPack(String key) {
+    public ComPack (String key) throws Exception {
         this(tts.get(key));
     }
 
-    public ComPack(int[] tasks) {
+    public ComPack(int[] tasks) throws Exception {
         for (int tt : tasks) {
             if ((tt & TaskType.es.getValue()) != 0) {
-                e_com = new EsCompany();
+                es = new EsCompany();
             }
             if ((tt & TaskType.mongo.getValue()) != 0) {
-                m_com = new MongoComDtl();
+                mongo = new MongoComDtl();
             }
             if ((tt & TaskType.redis.getValue()) != 0) {
-                r_com = new RedisCompanyIndex();
+                redis = new RedisCompanyIndex();
             }
             if ((tt & TaskType.arango.getValue()) != 0) {
-                a_com = new ArangoBusinessPack();
+                arango = new ArangoBusinessPack();
             }
         }
     }

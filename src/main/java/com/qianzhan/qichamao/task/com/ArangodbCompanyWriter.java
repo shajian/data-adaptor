@@ -83,7 +83,7 @@ public class ArangodbCompanyWriter extends BaseWriter {
             SharedData.open(tasks_key);
             ComPack cp = SharedData.get(tasks_key);
 
-            ArangoBusinessPack a_com = cp.a_com;
+            ArangoBusinessPack a_com = cp.arango;
             a_com.oc_code = company.oc_code;
             a_com.company = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
             SharedData.close(tasks_key);
@@ -130,10 +130,10 @@ public class ArangodbCompanyWriter extends BaseWriter {
             SharedData.open(tasks_key);
             ComPack cp = SharedData.get(tasks_key);
 
-            ArangoBusinessPack a_com = cp.a_com;
+            ArangoBusinessPack a_com = cp.arango;
             a_com.oc_code = company.oc_code;
             a_com.oc_area = company.oc_area;
-//            a_com.com = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
+//            arango.com = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
 
             //
             pool.execute(new ComDtl(tasks_key));
@@ -262,8 +262,6 @@ public class ArangodbCompanyWriter extends BaseWriter {
      * @param code oc_code of a vertex in a chain
      */
     private void combine(String code) throws Exception {
-//        code = "100000198";
-//        System.out.println("handling " + code);
         ArangoInterveneRepository intervene = ArangoInterveneRepository.singleton();
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
         // because there may be many vertices connect to the code vertex, so we set max_deep=2 here

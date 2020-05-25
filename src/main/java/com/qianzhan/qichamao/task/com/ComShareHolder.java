@@ -19,12 +19,12 @@ public class ComShareHolder extends ComBase {
     @Override
     public void run() {
         String oc_code = null, area = null;
-        if (compack.e_com != null) {
-            oc_code = compack.e_com.getOc_code();
-            area = compack.e_com.getOc_area();
-        } else if (compack.a_com != null) {
-            oc_code = compack.a_com.oc_code;
-            area = compack.a_com.oc_area;
+        if (compack.es != null) {
+            oc_code = compack.es.getOc_code();
+            area = compack.es.getOc_area();
+        } else if (compack.arango != null) {
+            oc_code = compack.arango.oc_code;
+            area = compack.arango.oc_area;
         }
 
         if (oc_code != null) {
@@ -37,7 +37,12 @@ public class ComShareHolder extends ComBase {
                     if (MiscellanyUtil.isBlank(gd.og_name)) continue;
                     gd.og_name = gd.og_name.trim();
                     holders.add(gd.og_name);
-                    map.put(gd.og_name, gd.og_money);
+                    Double old = map.get(gd.og_name);
+                    if (old == null) {
+                        map.put(gd.og_name, gd.og_money);
+                    } else {
+                        map.put(gd.og_name, gd.og_money + old);
+                    }
                     total_money += gd.og_money;
                 }
             } else {
@@ -47,15 +52,21 @@ public class ComShareHolder extends ComBase {
                     if (MiscellanyUtil.isBlank(gd.og_name) || gd.og_status == 4) continue;
                     gd.og_name = gd.og_name.trim();
                     holders.add(gd.og_name);
-                    map.put(gd.og_name, gd.og_subscribeAccount);
+                    Double old = map.get(gd.og_name);
+                    if (old == null) {
+                        map.put(gd.og_name, gd.og_subscribeAccount);
+                    } else {
+                        map.put(gd.og_name, gd.og_subscribeAccount + old);
+                    }
+
                     total_money += gd.og_subscribeAccount;
                 }
             }
-            if (compack.e_com != null) {
-                compack.e_com.setShare_holders(holders);
+            if (compack.es != null) {
+                compack.es.setShare_holders(holders);
             }
 
-            if (compack.a_com != null) {
+            if (compack.arango != null) {
                 int dist = ComUtil.edgeLength(map.size());
                 for (String key : map.keySet()) {       // key: share holder's name
                     int flag = NLP.recognizeName(key);
@@ -65,9 +76,9 @@ public class ComShareHolder extends ComBase {
                         List<String> codeAreas = ComUtil.getCodeAreas(key);
                         if (codeAreas.isEmpty()) {
                             if (GlobalConfig.getEnv() == 1) {
-                                compack.a_com.oldPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 1), money, ratio, dist, false);
+                                compack.arango.oldPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 1), money, ratio, dist, false);
                             } else {
-                                compack.a_com.setShare_holder(new ArangoBusinessCompany(key), money, ratio);
+                                compack.arango.setShare_holder(new ArangoBusinessCompany(key), money, ratio);
                             }
                         } else {
                             if (GlobalConfig.getEnv() == 1) {
@@ -75,19 +86,19 @@ public class ComShareHolder extends ComBase {
                                 for (String codeArea : codeAreas) {
                                     String code = codeArea.substring(0, 9);
                                     String oc_area = codeArea.substring(9);
-                                    compack.a_com.oldPack.setShare_holder(oc_code, new ArangoCpVD(code, key, oc_area), money, ratio, dist, share);
+                                    compack.arango.oldPack.setShare_holder(oc_code, new ArangoCpVD(code, key, oc_area), money, ratio, dist, share);
                                 }
                             } else {
                                 String ca = codeAreas.get(0);
-                                compack.a_com.setShare_holder(new ArangoBusinessCompany(ca.substring(0,9), key, ca.substring(9)), money, ratio);
+                                compack.arango.setShare_holder(new ArangoBusinessCompany(ca.substring(0,9), key, ca.substring(9)), money, ratio);
                             }
                         }
 
                     } else if (flag == 2) {
                         if (GlobalConfig.getEnv() == 1) {
-                            compack.a_com.oldPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 2), money, ratio, dist, false);
+                            compack.arango.oldPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 2), money, ratio, dist, false);
                         } else {
-                            compack.a_com.setShare_holder(new ArangoBusinessPerson(key, oc_code), money, ratio);
+                            compack.arango.setShare_holder(new ArangoBusinessPerson(key, oc_code), money, ratio);
                         }
                     }
                 }

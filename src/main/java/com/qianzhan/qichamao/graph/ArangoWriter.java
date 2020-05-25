@@ -1,5 +1,6 @@
 package com.qianzhan.qichamao.graph;
 
+import com.arangodb.ArangoCursor;
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.entity.BaseEdgeDocument;
 import com.qianzhan.qichamao.config.GlobalConfig;
@@ -20,14 +21,108 @@ public class ArangoWriter {
     public static void upsert(List<ComPack> cps) throws Exception {
         if (GlobalConfig.getEnv() == 1) {
             upsert_env1(cps);
+        } else {
+            upsert_env2(cps);
         }
     }
 
+    private static void upsert_env2(List<ComPack> cps) throws Exception {
+        Map<String, ArangoBusinessCompany> companies = new HashMap<>();
+        Map<String, ArangoBusinessPerson> persons = new HashMap<>();
+        Map<String, ArangoBusinessRelation> relations = new HashMap<>();
+        for (ComPack cp : cps) {
+            ArangoBusinessPack p = cp.arango;
+            // checkout the company itself
+            if (p.company != null) {
+                if (!companies.containsKey(p.company.getKey())) {
+                    companies.put(p.company.getKey(), p.company);
+                }
+            }
+            // checkout legal person of the company
+            if (p.c_lp != null && !companies.containsKey(p.c_lp.getKey())) { // c_lp and p_lp is exclusively
+                companies.put(p.c_lp.getKey(), p.c_lp);
+            } else if (p.p_lp != null && !persons.containsKey(p.p_lp.getKey())) {
+                persons.put(p.p_lp.getKey(), p.p_lp);
+            }
+            if (p.r_lp != null && !relations.containsKey(p.r_lp.getKey())) {
+                relations.put(p.r_lp.getKey(), p.r_lp);
+            }
+            // checkout share holders of the company
+            if (p.c_shs != null) {
+                for (ArangoBusinessCompany sh : p.c_shs) {
+                    if (!companies.containsKey(sh.getKey())) {
+                        companies.put(sh.getKey(), sh);
+                    }
+                }
+            }
+            if (p.p_shs != null) {
+                for (ArangoBusinessPerson sh : p.p_shs) {
+                    if (!persons.containsKey(sh.getKey())) {
+                        persons.put(sh.getKey(), sh);
+                    }
+                }
+            }
+            if (p.r_shs != null) {
+                for (ArangoBusinessRelation sh : p.r_shs) {
+                    if (!relations.containsKey(sh.getKey())) {
+                        relations.put(sh.getKey(), sh);
+                    }
+                }
+            }
+            // checkout senior members of the company
+            if (p.c_sms != null) {
+                for (ArangoBusinessCompany sh : p.c_sms) {
+                    if (!companies.containsKey(sh.getKey())) {
+                        companies.put(sh.getKey(), sh);
+                    }
+                }
+            }
+            if (p.p_sms != null) {
+                for (ArangoBusinessPerson sh : p.p_sms) {
+                    if (!persons.containsKey(sh.getKey())) {
+                        persons.put(sh.getKey(), sh);
+                    }
+                }
+            }
+            if (p.r_sms != null) {
+                for (ArangoBusinessRelation sh : p.r_sms) {
+                    if (!relations.containsKey(sh.getKey())) {
+                        relations.put(sh.getKey(), sh);
+                    }
+                }
+            }
+        }
+        List<BaseDocument> c_docs = new ArrayList<>();
+        List<BaseDocument> p_docs = new ArrayList<>();
+        List<BaseEdgeDocument> r_docs = new ArrayList<>();
+
+        for (String key : companies.keySet()) {
+            c_docs.add(companies.get(key).to());
+        }
+        for (String key : persons.keySet()) {
+            p_docs.add(persons.get(key).to());
+        }
+        for (String key : relations.keySet()) {
+            r_docs.add(relations.get(key).to());
+        }
+        ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
+        try {
+            business.insert(c_docs);
+        } catch (Exception e) {
+
+        }
+        try {
+            business.insert(p_docs);
+        } catch (Exception e) {
+
+        }
+        business.insert_e(r_docs);
+    }
     private static void upsert_env1(List<ComPack> cps) throws Exception {
         Map<String, ArangoCpVD> vertices = new HashMap<>(cps.size());
         Map<String, ArangoCpED> edges = new HashMap<>(cps.size());
         for (ComPack cp : cps) {
-            ArangoCpPack p = cp.a_com.oldPack;
+            ArangoCpPack p = cp.arango.oldPack;
             String code = p.oc_code;
             if (MiscellanyUtil.isBlank(code)) {
                 if (p.com != null) code = p.com.getKey();
@@ -123,7 +218,7 @@ public class ArangoWriter {
             e.printStackTrace();
         }
         try {
-            cp.insert(edocs);
+            cp.insert_e(edocs);
         } catch (Exception e) {
             e.printStackTrace();
         }

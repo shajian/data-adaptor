@@ -86,9 +86,9 @@ public class EsCompanyWriter extends BaseWriter {
 
             SharedData.open(tasks_key);
             ComPack cp = SharedData.get(tasks_key);
-            cp.e_com.loadFrom(company);
-            if (cp.m_com != null) {
-                cp.m_com.loadFrom(company);
+            cp.es.loadFrom(company);
+            if (cp.mongo != null) {
+                cp.mongo.loadFrom(company);
             }
 
             pool.execute(new ComDtl(tasks_key));
@@ -124,7 +124,7 @@ public class EsCompanyWriter extends BaseWriter {
 
         List<EsCompany> e_coms = new ArrayList<>();
         for (ComPack cp : SharedData.getBatch(tasks_key)) {
-            e_coms.add(cp.e_com);
+            e_coms.add(cp.es);
         }
         repository.index(e_coms);
 

@@ -90,16 +90,16 @@ public class RedisCompanyIndexWriter extends BaseWriter {
 
             SharedData.open(tasks_key);
             ComPack cp = SharedData.get(tasks_key);
-            cp.r_com = new RedisCompanyIndex();
-            cp.r_com.setCode(company.oc_code);
-            cp.r_com.setName(company.oc_name);
-            cp.r_com.setArea(company.oc_area);
+            cp.redis = new RedisCompanyIndex();
+            cp.redis.setCode(company.oc_code);
+            cp.redis.setName(company.oc_name);
+            cp.redis.setArea(company.oc_area);
 
             pool.execute(new ComDtl(tasks_key));        // to get validness
             count++;
 
             // check if arango task is turned on
-            ArangoCpPack a_com = cp.a_com;
+            ArangoCpPack a_com = cp.arango;
             if (a_com != null) {
                 a_com.com = new ArangoCpVD(company.oc_code, company.oc_name, company.oc_area);
             }
@@ -132,7 +132,7 @@ public class RedisCompanyIndexWriter extends BaseWriter {
 
         List<ComPack> cps = SharedData.getBatch(tasks_key);
         for (ComPack cp : cps) {
-            RedisCompanyIndex com = cp.r_com;
+            RedisCompanyIndex com = cp.redis;
 
             // for efficiency, we do not handle via ComPack here, but
             // use a map to categorize company names.

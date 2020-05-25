@@ -15,8 +15,8 @@ public class ComTag extends ComBase {
     }
     @Override
     public void run() {
-        if (compack.e_com != null) {
-            EsCompany c = compack.e_com;
+        if (compack.es != null) {
+            EsCompany c = compack.es;
             List<OrgCompanyTag> tags = MybatisClient.getCompanyTags(c.getOc_code());
             List<String> unweighted_tags = new ArrayList<>();
             TopNCollection<OrgCompanyTag> coll = new TopNCollection(3, OrgCompanyTag.comparator);

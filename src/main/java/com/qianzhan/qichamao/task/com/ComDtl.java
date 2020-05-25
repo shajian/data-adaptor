@@ -25,14 +25,14 @@ public class ComDtl extends ComBase {
 
     @Override
     public void run() {
-        EsCompany e_com = compack.e_com;
-        MongoComDtl m_com = compack.m_com;
-        ArangoBusinessPack a_com = compack.a_com;
+        EsCompany e_com = compack.es;
+        MongoComDtl m_com = compack.mongo;
+        ArangoBusinessPack a_com = compack.arango;
         String oc_code = null;
         if (e_com != null) oc_code = e_com.getOc_code();
         else if (e_com!=null) oc_code = m_com.get_id();
         else if (a_com!=null) oc_code = a_com.oc_code;
-        else if (compack.r_com != null) oc_code = compack.r_com.getCode();
+        else if (compack.redis != null) oc_code = compack.redis.getCode();
 
         Calendar calendar = Calendar.getInstance();
         calendar.set(1949, 1, 1);
@@ -101,9 +101,9 @@ public class ComDtl extends ComBase {
                         }
                     }
                 }
-                if (compack.r_com != null) {
+                if (compack.redis != null) {
                     byte status = ComUtil.getCompanyStatus(dtl.od_ext);
-                    compack.r_com.setValid(ComUtil.isCompanyStatusNormal(status));
+                    compack.redis.setValid(ComUtil.isCompanyStatusNormal(status));
                 }
             }
 

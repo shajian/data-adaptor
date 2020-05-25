@@ -13,8 +13,8 @@ public class ComOldName extends ComBase {
     }
     @Override
     public void run() {
-        if (compack.e_com != null) {
-            EsCompany c = compack.e_com;
+        if (compack.es != null) {
+            EsCompany c = compack.es;
             List<String> names = new ArrayList<>();
             for (String n : MybatisClient.getCompanyOldNames(c.getOc_code())) {
                 if (MiscellanyUtil.isBlank(n)) continue;

@@ -35,7 +35,7 @@ public class MongodbCompanyWriter extends BaseWriter {
         List<ComPack> cps = SharedData.getBatch(tasks_key);
         List<Document> docs = new ArrayList<>(cps.size());
         for (ComPack cp: cps) {
-            docs.add(BeanUtil.obj2Doc(cp.m_com));
+            docs.add(BeanUtil.obj2Doc(cp.mongo));
         }
         MongoClientRegistry.client(MongoClientRegistry.CollName.dtl).insert(docs);
     }

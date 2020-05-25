@@ -23,8 +23,8 @@ public class ComBrand extends ComBase {
 
         }
 
-        if (compack.e_com != null) {
-            EsCompany c = compack.e_com;
+        if (compack.es != null) {
+            EsCompany c = compack.es;
             List<String> brands = new ArrayList<>();
             for (String name : MybatisClient.getCompanyBrands(c.getOc_code(), tail)) {
                 if (MiscellanyUtil.isBlank(name)) continue;

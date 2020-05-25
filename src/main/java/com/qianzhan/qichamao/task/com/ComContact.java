@@ -17,17 +17,17 @@ public class ComContact extends ComBase {
     @Override
     public void run() {
         String oc_code = null;
-        if (compack.e_com != null) {
-            oc_code = compack.e_com.getOc_code();
-        } else if (compack.a_com != null) {
-            oc_code = compack.a_com.oc_code;
-        } else if (compack.m_com != null) {
-            oc_code = compack.m_com.get_id();
+        if (compack.es != null) {
+            oc_code = compack.es.getOc_code();
+        } else if (compack.arango != null) {
+            oc_code = compack.arango.oc_code;
+        } else if (compack.mongo != null) {
+            oc_code = compack.mongo.get_id();
         }
         if (oc_code != null) {
             List<OrgCompanyContact> contacts = MybatisClient.getCompanyContacts(oc_code);
-            if (compack.e_com != null) {
-                EsCompany c = compack.e_com;
+            if (compack.es != null) {
+                EsCompany c = compack.es;
                 List<String> m_phones = new ArrayList<>();
                 List<String> f_phones = new ArrayList<>();
                 List<String> mails = new ArrayList<>();
@@ -47,7 +47,7 @@ public class ComContact extends ComBase {
                 c.setMails(mails);
             }
 
-            if (compack.a_com != null) {
+            if (compack.arango != null) {
                 List<String> cs = new ArrayList<>();
                 for (OrgCompanyContact contact : contacts) {
                     if (MiscellanyUtil.isBlank(contact.oc_contact)) continue;
@@ -60,7 +60,7 @@ public class ComContact extends ComBase {
                     Set<String> codes = getMongoComContacts(cs);
                     if (codes.size() > 1) {
                         System.out.println(oc_code + " has same contacts with: " + String.join(",", codes));
-                        compack.a_com.setContacts(codes);
+                        compack.arango.setContacts(codes);
                     }
                 }
             }

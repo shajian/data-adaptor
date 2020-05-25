@@ -10,7 +10,6 @@ import com.arangodb.velocystream.Request;
 import com.arangodb.velocystream.RequestType;
 import com.arangodb.velocystream.Response;
 import com.qianzhan.qichamao.config.GlobalConfig;
-import com.qichamao.graph.*;
 import com.qianzhan.qichamao.graph.*;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import lombok.Getter;
@@ -356,11 +355,19 @@ public abstract class ArangoBaseRepository<T> {
     }
 
     // operations on document
-    public void insert(Collection<BaseEdgeDocument> documents) {
+    public void insert_e(Collection<BaseEdgeDocument> documents) {
         insert(graphMeta.edge(), documents);
     }
 
-    public <U> void insert(String coll, Collection<U> us) {
+    public <U extends BaseDocument> void insert(List<U> us) throws Exception {
+        if (MiscellanyUtil.isArrayEmpty(us)) return;
+        String id = us.get(0).getId();
+        if (MiscellanyUtil.isBlank(id) || !id.contains("/")) {
+            throw new Exception("document 'u' must have it `id` field been set correctly");
+        }
+        insert(id.split("/")[0], us);
+    }
+    public <U extends BaseDocument> void insert(String coll, Collection<U> us) {
         if (MiscellanyUtil.isArrayEmpty(us) || MiscellanyUtil.isBlank(coll)) return;
         ArangoDatabase db = client.db(database);
         ArangoCollection collection = db.collection(coll);
@@ -369,7 +376,14 @@ public abstract class ArangoBaseRepository<T> {
     public String insert(BaseEdgeDocument document) {
         return insert(graphMeta.edge(), document);
     }
-    public <U> String insert(String coll, U u) {
+    public <U extends BaseDocument> String insert(U u) throws Exception {
+        String id = u.getId();
+        if (MiscellanyUtil.isBlank(id) || !id.contains("/")) {
+            throw new Exception("document 'u' must have it `id` field been set correctly");
+        }
+        return insert(id.split("/")[0], u);
+    }
+    public <U extends BaseDocument> String insert(String coll, U u) {
         if (MiscellanyUtil.isBlank(coll) || u == null) return null;
         ArangoDatabase db = client.db(database);
         ArangoCollection collection = db.collection(coll);

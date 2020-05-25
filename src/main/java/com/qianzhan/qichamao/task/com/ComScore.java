@@ -18,8 +18,8 @@ public class ComScore extends ComBase {
 
     @Override
     public void run() {
-        if (compack.e_com != null) {
-            EsCompany c = compack.e_com;
+        if (compack.es != null) {
+            EsCompany c = compack.es;
             OrgCompanyStatisticsInfo info = MybatisClient.getCompanyStatisticsInfo(c.getOc_code());
             int count = MybatisClient.getBrowseCount(c.getOc_code());
             int score = 0;

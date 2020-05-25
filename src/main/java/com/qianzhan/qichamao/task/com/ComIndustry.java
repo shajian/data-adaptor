@@ -12,8 +12,8 @@ public class ComIndustry extends ComBase {
     }
     @Override
     public void run() {
-        if (compack.e_com != null) {
-            EsCompany c = compack.e_com;
+        if (compack.es != null) {
+            EsCompany c = compack.es;
             String code = c.getOc_code();
             try {
                 List<OrgCompanyIndustry> industries = MybatisClient.getCompanyIndustries(
