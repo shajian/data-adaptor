@@ -52,6 +52,7 @@ public class ArangoBusinessRelation {
         this.to = to;
         this.key = key;
         this.type = type;
+        this.id = String.format("%s/%s", collection, this.key);
 //        this.share = share;
     }
 
@@ -92,6 +93,7 @@ public class ArangoBusinessRelation {
 
     public BaseEdgeDocument to() {
         BaseEdgeDocument doc = new BaseEdgeDocument(this.key, this.from, this.to);
+        doc.setId(this.id);
         doc.addAttribute("type", type);
 //        if (share)
 //            doc.addAttribute("share", share);

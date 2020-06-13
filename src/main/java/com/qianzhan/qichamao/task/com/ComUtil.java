@@ -1,5 +1,9 @@
 package com.qianzhan.qichamao.task.com;
 
+import com.qianzhan.qichamao.config.GlobalConfig;
+import com.qianzhan.qichamao.dal.es.EsCompanyInput;
+import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
+import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.api.EsCompanySearcher;
 import com.qianzhan.qichamao.dal.RedisClient;
@@ -112,14 +116,28 @@ public class ComUtil {
 
     public static List<String> getCodeAreas(String oc_name) {
         List<String> codeAreas = new ArrayList<>();
+        if (MiscellanyUtil.isBlank(oc_name)) return codeAreas;
         String codearea = RedisClient.get(oc_name);
         if (!MiscellanyUtil.isBlank(codearea)) {
-            codeAreas.add(codearea.substring(0,9)+codearea.substring(10));
+            codeAreas.add(codearea);
         } else {
             Set<String> codeareas = RedisClient.smembers("s:" + oc_name);
+
             if (!MiscellanyUtil.isArrayEmpty(codeareas)) {
+                String[] codes = new String[codeareas.size()];
+                int i = 0;
                 for (String ca : codeareas) {
-                    codeAreas.add(ca.substring(0,9)+ca.substring(10));
+                    codes[i] = ca.substring(0,9);
+                    i++;
+                }
+                EsCompanyInput input = new EsCompanyInput();
+                input.setIds(codes);
+                input.setSrc_inc("oc_code", "oc_status", "oc_area");
+                List<EsCompany> companies = EsCompanyRepository.singleton().mget(input);
+                for (EsCompany company : companies) {
+                    if (isCompanyStatusNormal(company.getOc_status())) {
+                        codeAreas.add(company.getOc_code()+company.getOc_area());
+                    }
                 }
             } else {
                 // search from ES
@@ -147,6 +165,39 @@ public class ComUtil {
             }
         }
         return codeAreas;
+    }
+
+    /**
+     * remove noise information in a company name.
+     * this methods must be used at very last step.
+     * @param oc_name
+     * @return
+     */
+    public static String pruneCompanyName(String oc_name) {
+        if (MiscellanyUtil.isBlank(oc_name)) return null;
+        oc_name = oc_name.trim();
+        int idx = oc_name.indexOf("公司");
+        if (idx >= 6) {
+            char c = oc_name.charAt(idx+2);
+            if (c == '(' || c == '（') {
+                c = oc_name.charAt(oc_name.length() - 1);
+                if (c == ')' || c == '）') {
+                    return oc_name.substring(0, idx+2);
+                }
+            }
+        } else {
+            idx = oc_name.lastIndexOf("(");
+            if (idx < 6) {
+                idx = oc_name.lastIndexOf("（");
+            }
+            if (idx >= 6) {
+                char c = oc_name.charAt(oc_name.length() - 1);
+                if (c == ')' || c == '）') {
+                    return oc_name.substring(0, idx);
+                }
+            }
+        }
+        return oc_name;
     }
 
     /**

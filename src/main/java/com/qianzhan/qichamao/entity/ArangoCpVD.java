@@ -103,7 +103,7 @@ public class ArangoCpVD {
     }
 
     /**
-     * convert this instance to `upsert` AQL
+     * convert this instance to `insert` AQL
      * update: `key` and `type` cannot be updated
      * @param coll the collection name
      * @return

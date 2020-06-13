@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.arangodb.*;
 import com.arangodb.entity.*;
+import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.DocumentCreateOptions;
 import com.arangodb.model.PersistentIndexOptions;
 import com.arangodb.velocystream.Request;
@@ -205,19 +206,77 @@ public abstract class ArangoBaseRepository<T> {
         db.deleteIndex(index_handle);
     }
 
+    /**
+     * scan document in the whole table
+     * @param coll
+     * @param offset
+     * @param count
+     * @return
+     */
+    public List<BaseDocument> scan(String coll, int offset, int count) {
+        ArangoDatabase db = client.db(database);
+        String aql = String.format("FOR v in %s LIMIT %d, %d RETURN v", coll, offset, count);
+        ArangoCursor<BaseDocument> cursor = db.query(aql, BaseDocument.class);
+        return cursor.asListRemaining();
+    }
 
+    /**
+     * get out or in degree of a given vertex
+     * @param id id of given vertex
+     * @param out_in  1: out degree; 2: in degree; 3: out-in degree
+     * @return
+     */
+    public int out_in_degree(String id, int out_in) {
+        if (MiscellanyUtil.isBlank(id) || !id.contains("/")) return -1;
+        if (out_in < 1) out_in = 1;
+        if (out_in > 3) out_in = 3;
+        String filter = null;
+        if (out_in == 1) {
+            filter = String.format("e._from == '%s'", id);
+        } else if (out_in == 2) {
+            filter = String.format("e._to == '%s'", id);
+        } else {
+            filter = String.format("e._from == '%s' OR e.to == '%s'", id, id);
+        }
+        ArangoDatabase db = client.db(database);
+        String aql = String.format("FOR e in %s FILTER %s RETURN e._key", graphMeta.edge(), filter);
+        ArangoCursor<String> cursor = db.query(aql, String.class);
+
+        int count = 0;
+        while (cursor.hasNext()) {
+            String key = cursor.next();
+            if (key == null) continue;
+            count++;
+        }
+        return count;
+    }
+
+
+    public List<BaseEdgeDocument> neighbours(String id) {
+        return neighbours(id, 3);
+    }
 
     /**
      * neighbour is formed between the given vertex and to which other vertex directly connects
      * @param id given vertex's id
+     * @param direction 1: outbound; 2: inbound; 3: any
      * @return all edges
      */
-    public List<BaseEdgeDocument> neighbours(String id) {
+    public List<BaseEdgeDocument> neighbours(String id, int direction) {
         if (MiscellanyUtil.isBlank(id) || !id.contains("/")) return null;
+        if (direction < 1 || direction > 3) direction = 3;
         ArangoDatabase db = client.db(database);
         if (!db.exists()) return null;
-        String aql = "FOR e in " + graphMeta.edge() + " FILTER e._to == '%s' OR e._from == '%s' RETURN e";
-        ArangoCursor<BaseEdgeDocument> cursor = db.query(String.format(aql, id, id), BaseEdgeDocument.class);
+        String condition = null;
+        if (direction == 1) {
+            condition = String.format("e._from == '%s'", id);
+        } else if (direction == 2) {
+            condition = String.format("e._to == '%s'", id);
+        } else {
+            condition = String.format("e._from == '%s' OR e._to == '%s'", id, id);
+        }
+        String aql = "FOR e in %s FILTER %s RETURN e";
+        ArangoCursor<BaseEdgeDocument> cursor = db.query(String.format(aql, graphMeta.edge(), condition), BaseEdgeDocument.class);
         List<BaseEdgeDocument> edges = cursor.asListRemaining();
         try {
             cursor.close();
@@ -228,6 +287,10 @@ public abstract class ArangoBaseRepository<T> {
         return edges;
     }
 
+    public List<BaseDocument> connectedGraph(String start_id, int max_depth) {
+        return connectedGraph(start_id, 1, max_depth);
+    }
+
     /**
      * get all vertices of a limited connected graph.
      * limitation here is needed, or else the connected graph will be very huge.
@@ -235,14 +298,16 @@ public abstract class ArangoBaseRepository<T> {
      * @param max_depth max_depth when traversing. when max_depth==1, this function decays to be `neighbours`
      * @return
      */
-    public List<BaseDocument> connectedGraph(String start_id, int max_depth) {
+    public List<BaseDocument> connectedGraph(String start_id, int min_depth, int max_depth) {
         if (MiscellanyUtil.isBlank(start_id) || !start_id.contains("/")) return null;
-        if (max_depth < 2) max_depth = 2;
+        if (max_depth > 3) max_depth = 3;
+        if (min_depth < 0) min_depth = 0;
+        if (min_depth > max_depth) min_depth = max_depth;
         ArangoDatabase db = client.db(database);
         String aql = String.format(
-                "FOR v, e IN 1..%d ANY '%s' GRAPH '%s' OPTIONS { bfs: true, uniqueVertices: 'global' } " +
+                "FOR v IN %d..%d ANY '%s' GRAPH '%s' OPTIONS { bfs: true, uniqueVertices: 'global' } " +
                         "RETURN v",
-                max_depth, start_id, graphMeta.graph()
+                min_depth, max_depth, start_id, graphMeta.graph()
         );
         ArangoCursor<BaseDocument> cursor = db.query(aql, BaseDocument.class);
         List<BaseDocument> docs = cursor.asListRemaining();
@@ -308,25 +373,25 @@ public abstract class ArangoBaseRepository<T> {
         return paths;
     }
 
-    public List<BaseDocument> shortestPath(String start_id, String end_id) {
-        if (MiscellanyUtil.isBlank(start_id) || !start_id.contains("/")
-            || MiscellanyUtil.isBlank(end_id) || !end_id.contains("/")) return null;
-        ArangoDatabase db = client.db(database);
-        String aql = String.format(
-                "FOR v, e IN ANY SHORTEST_PATH '%s' TO '%s' GRAPH '%s' RETURN v",
-                start_id, end_id, graphMeta.graph()
-        );
-        ArangoCursor<BaseDocument> cursor = db.query(aql, BaseDocument.class);
-        List<BaseDocument> vertices = cursor.asListRemaining();
-        // vertices may contain null-element.
-
-        try {
-            cursor.close();
-        } catch (Exception e) {
-
-        }
-        return vertices;
-    }
+//    public List<BaseDocument> shortestPath(String start_id, String end_id) {
+//        if (MiscellanyUtil.isBlank(start_id) || !start_id.contains("/")
+//            || MiscellanyUtil.isBlank(end_id) || !end_id.contains("/")) return null;
+//        ArangoDatabase db = client.db(database);
+//        String aql = String.format(
+//                "FOR v, e IN ANY SHORTEST_PATH '%s' TO '%s' GRAPH '%s' RETURN v",
+//                start_id, end_id, graphMeta.graph()
+//        );
+//        ArangoCursor<BaseDocument> cursor = db.query(aql, BaseDocument.class);
+//        List<BaseDocument> vertices = cursor.asListRemaining();
+//        // vertices may contain null-element.
+//
+//        try {
+//            cursor.close();
+//        } catch (Exception e) {
+//
+//        }
+//        return vertices;
+//    }
 
     /**
      * merge an old vertex into a new vertex
@@ -351,6 +416,28 @@ public abstract class ArangoBaseRepository<T> {
 
             ArangoCollection collection = db.collection(segs[0]);
             collection.deleteDocument(segs[1]);
+        }
+    }
+
+    public void merge(List<String> old_from_ids, String new_from_id, boolean reserved) {
+        if (MiscellanyUtil.isArrayEmpty(old_from_ids) || MiscellanyUtil.isBlank(new_from_id)) return;
+        ArangoDatabase db = client.db(database);
+        String aql = String.format(
+                "FOR e in %s FILTER e._from IN ['%s'] UPDATE e._key WITH { _from: '%s' } IN %s",
+                graphMeta.edge(), String.join("', '", old_from_ids), new_from_id, graphMeta.edge()
+        );
+        db.query(aql, String.class);
+        if (!reserved) {        // do not reserved isolated vertex, remove it!
+            List<String> keys = new ArrayList<>(old_from_ids.size());
+            String coll = null;
+            for (String id : old_from_ids) {
+                String[] segs = id.split("/");
+                if (coll == null)
+                    coll = segs[0];
+                keys.add(segs[1]);
+            }
+            ArangoCollection collection = db.collection(coll);
+            collection.deleteDocuments(keys);
         }
     }
 
@@ -455,6 +542,12 @@ public abstract class ArangoBaseRepository<T> {
         return docs.getDocuments();
     }
 
+    /**
+     * get an edge according to _from and _to
+     * @param from
+     * @param to
+     * @return
+     */
     public BaseEdgeDocument get_e(String from, String to) {
         if (MiscellanyUtil.isBlank(from) || MiscellanyUtil.isBlank(to)) return null;
         ArangoDatabase db = client.db(database);
@@ -481,26 +574,26 @@ public abstract class ArangoBaseRepository<T> {
 
 
 
-    public List<BaseEdgeDocument> searchByTos(List<String> tos) {
+    public List<BaseEdgeDocument> searchByTos(Collection<String> tos) {
         return searchByEnds(tos, false);
     }
-    public List<BaseEdgeDocument> searchByFroms(List<String> froms) {
+    public List<BaseEdgeDocument> searchByFroms(Collection<String> froms) {
         return searchByEnds(froms, true);
     }
 
     /**
-     *
+     * search for edges according to edge end points.
      * @param ends list of end id
      * @param from  true->_from; false->_to
      * @return
      */
-    public List<BaseEdgeDocument> searchByEnds(List<String> ends, boolean from) {
+    public List<BaseEdgeDocument> searchByEnds(Collection<String> ends, boolean from) {
         if (MiscellanyUtil.isArrayEmpty(ends)) return null;
         ArangoDatabase db = client.db(database);
-        String ids = String.join(", ", ends);
+        String ids = String.join("', '", ends);
         String attr = from ? "from" : "to";
         String aql = String.format(
-                "FOR e in %s FILTER e._%s IN [%s] RETURN e",
+                "FOR e in %s FILTER e._%s IN ['%s'] RETURN e",
                 graphMeta.edge(), attr, ids
         );
         ArangoCursor<BaseEdgeDocument> cursor = db.query(aql, BaseEdgeDocument.class);
@@ -511,6 +604,64 @@ public abstract class ArangoBaseRepository<T> {
 
         }
         return edges;
+    }
+
+    public ArangoGraphPath shortestPath(String from, String to) {
+        if (MiscellanyUtil.isBlank(from) || MiscellanyUtil.isBlank(to)) return null;
+        ArangoDatabase db = client.db(database);
+        String aql = String.format(
+                "FOR v, e IN ANY SHORTEST_PATH '%s' TO '%s' GRAPH '%s' RETURN { vertex: v, edge: e}",
+                from, to, graphMeta.graph()
+        );
+        ArangoCursor<String> cursor = db.query(aql, String.class);
+        List<ArangoGraphPath> segments = new ArrayList<>();
+        ArangoGraphPath path = new ArangoGraphPath();
+        path.vertices = new ArrayList<>();
+        path.edges = new ArrayList<>();
+        while (cursor.hasNext()) {
+            String json = cursor.next();
+            if (json == null) continue;
+            ArangoGraphPath segment = JSON.parseObject(json, ArangoGraphPath.class);
+            if (segment != null && segment.vertices != null) {
+                path.vertices.add(segment.vertex);
+                path.edges.add(segment.edge);
+            }
+        }
+        try {
+            cursor.close();
+        } catch (Exception e) {
+
+        }
+
+
+        return path;
+    }
+
+    public List<ArangoGraphPath> kShortestPaths(String from, String to, int k) {
+        if (MiscellanyUtil.isBlank(from) || MiscellanyUtil.isBlank(to)) return null;
+        if (k < 1) k = 1;
+        if (k > 3) k = 3;
+        ArangoDatabase db = client.db(database);
+        String aql = String.format(
+                "FOR p IN ANY K_SHORTEST_PATHS '%s' TO '' GRAPH '' LIMIT %d RETURN {vertices: p.vertices, edges: p.edges}",
+                from, to, graphMeta.graph(), k
+        );
+        ArangoCursor<String> cursor = db.query(aql, String.class);
+        List<ArangoGraphPath> paths = new ArrayList<>();
+        while (cursor.hasNext()) {
+            String json = cursor.next();
+            if (json == null) continue;
+            paths.add(JSON.parseObject(json, ArangoGraphPath.class));
+        }
+        return paths;
+    }
+
+
+    public List<BaseDocument> execute(String aql) {
+        if (MiscellanyUtil.isBlank(aql)) return null;
+        ArangoDatabase db = client.db(database);
+        ArangoCursor<BaseDocument> cursor = db.query(aql, BaseDocument.class);
+        return cursor.asListRemaining();
     }
 
     // ============== REST API ================

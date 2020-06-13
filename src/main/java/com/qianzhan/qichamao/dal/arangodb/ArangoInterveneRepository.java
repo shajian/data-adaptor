@@ -3,14 +3,14 @@ package com.qianzhan.qichamao.dal.arangodb;
 import com.arangodb.ArangoCursor;
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.BaseDocument;
-import com.qianzhan.qichamao.graph.ArangoGraphCpId;
+import com.qianzhan.qichamao.graph.ArangoIntervene;
 import com.qianzhan.qichamao.graph.ArangoCollectionMeta;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 
 import java.io.IOException;
 import java.util.List;
 
-public class ArangoInterveneRepository extends ArangoBaseRepository<ArangoGraphCpId> {
+public class ArangoInterveneRepository extends ArangoBaseRepository<ArangoIntervene> {
     private static ArangoInterveneRepository _singleton;
 
     private ArangoInterveneRepository() throws Exception {

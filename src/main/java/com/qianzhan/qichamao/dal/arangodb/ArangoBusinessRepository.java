@@ -11,6 +11,7 @@ import com.qianzhan.qichamao.entity.CompanyTriple;
 import com.qianzhan.qichamao.graph.*;
 import com.qianzhan.qichamao.util.Cryptor;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
+import org.elasticsearch.common.recycler.Recycler;
 
 import java.io.IOException;
 import java.util.*;
@@ -25,6 +26,8 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
             if (collection.equals(ArangoBusinessCompany.collection)) continue;
             ArangoBusinessPerson.collection = collection;
         }
+        if (ArangoBusinessPerson.collection == null)
+            ArangoBusinessPerson.collection = ArangoBusinessCompany.collection;
     }
 
     public static ArangoBusinessRepository singleton() throws Exception {
@@ -69,6 +72,7 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
         List<BaseDocument> vertices = cursor.asListRemaining();
 
         List<PersonAggregation> aggregations = new ArrayList<>();
+        // traverse current batch of persons
         for (BaseDocument vertex : vertices) {
             if (vertex == null) continue;
             PersonAggregation aggregation = aggregate(vertex.getId(), 5);
@@ -170,24 +174,11 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
     }
 
     /**
-     * This method just cooperates with aggregate(String code, String name).
-     * @param keys
+     *
+     * @param person_id
+     * @param max max number of companies to be shown in a group
      * @return
      */
-    public PersonAggregation aggregate(List<String> keys) {
-        PersonAggregation aggregation = new PersonAggregation();
-        Collection<BaseDocument> docs = get(ArangoBusinessCompany.collection, keys);
-        if (docs != null) {
-            for (BaseDocument doc : docs) {
-                CompanyTriple triple = new CompanyTriple();
-                triple.oc_name = (String) doc.getAttribute("name");
-                triple.oc_area = (String) doc.getAttribute("area");
-                triple.oc_code = doc.getKey();
-            }
-        }
-        return aggregation;
-    }
-
     private PersonAggregation aggregate(String person_id, int max) {
         // find all neighbours of this person
         // note that we limit number to 100.
@@ -233,16 +224,56 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
         return aggregation;
     }
 
-    public void Controller(String code) {
-        if (MiscellanyUtil.isBlank(code)) return;
-        String aql = "FOR v, e, p in 1..3 INBOUND '%s/%s' GRAPH '%s' FILTER p.edges[*].type ALL == 2 " +
-                "RETURN { vertices: p.vertices, edges: p.edges }";
+    public CompanyShareHolder Controller(String code) {
+        if (MiscellanyUtil.isBlank(code)) return null;
+        // we set max depth to 5 with hardly coding
+        String aql = null;
+        if (GlobalConfig.getEnv() == 1)
+            aql = String.format("FOR v, e, p in 1..5 INBOUND '%s/%s' GRAPH '%s' " +
+                    "FILTER v.type == 2 AND p.edges[*].type ALL == 2 " +
+                "RETURN { vertices: p.vertices, edges: p.edges }",
+                    ArangoBusinessCompany.collection, code, graphMeta.graph());
+        else
+            aql = String.format("FOR v, e, p in 1..5 INBOUND '%s/%s' GRAPH '%s' " +
+                            "FILTER IS_SAME_COLLECTION('%s', v) AND p.edges[*].type ALL == 2 " +
+                    "RETURN { vertices: p.vertices, edges: p.edges }",
+                    ArangoBusinessCompany.collection, code, graphMeta.graph(), ArangoBusinessPerson.collection);
         ArangoDatabase db = client.db(database);
-        ArangoCursor<String> cursor = db.query(String.format(aql, ArangoBusinessCompany.collection, code, graphMeta.graph()), String.class);
+        ArangoCursor<String> cursor = db.query(aql, String.class);
         List<ArangoGraphPath> paths = new ArrayList<>();
         for (String json : cursor.asListRemaining()) {
             if (json == null) continue;
             paths.add(JSON.parseObject(json, ArangoGraphPath.class));
         }
+        Map<String, Float> map = new HashMap<>();
+        for (ArangoGraphPath path : paths) {
+            if (MiscellanyUtil.isArrayEmpty(path.vertices) || MiscellanyUtil.isArrayEmpty(path.edges)) continue;
+
+            int size = path.vertices.size();
+            String sh = (String) path.vertices.get(size - 1).getAttribute("name");  // SHARE HOLDER
+            if (MiscellanyUtil.isBlank(sh)) continue;
+
+            float ratio = 1;
+            for (BaseEdgeDocument edge : path.edges) {
+                Float r = (Float) edge.getAttribute("ratio");
+                if (r != null) {
+                    ratio *= r;
+                }
+            }
+            Float old = map.get(sh);
+            if (old == null) map.put(sh, ratio);
+            else map.put(sh, ratio+old);
+        }
+        if (map.isEmpty()) return null;
+        CompanyShareHolder sh = new CompanyShareHolder();
+        for (String key : map.keySet()) {
+            float r = map.get(key);
+            if (sh.finalRatio < r) {
+                sh.finalController = key;
+                sh.finalRatio = r;
+            }
+        }
+        return sh;
     }
+
 }

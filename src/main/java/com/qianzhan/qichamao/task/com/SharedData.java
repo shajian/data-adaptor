@@ -33,7 +33,7 @@ public class SharedData {
         packss.get(key).clear();
     }
 
-    public static void open(String key) {
+    public static void open(String key) throws Exception {
         ComPack cp = new ComPack(key);
         packs.put(key, cp);
         packss.get(key).add(cp);

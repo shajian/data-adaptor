@@ -111,7 +111,7 @@ public class ArangoCpED {
     }
 
     /**
-     * convert this instance to `upsert` AQL
+     * convert this instance to `insert` AQL
      * `key` `from` `to` and `type` can not be updated
      * @param coll collection name
      * @return

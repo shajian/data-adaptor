@@ -47,23 +47,23 @@ public class ComContact extends ComBase {
                 c.setMails(mails);
             }
 
-            if (compack.arango != null) {
-                List<String> cs = new ArrayList<>();
-                for (OrgCompanyContact contact : contacts) {
-                    if (MiscellanyUtil.isBlank(contact.oc_contact)) continue;
-                    if (contact.oc_status != 1) continue;
-
-
-                    cs.add(contact.oc_contact);
-                }
-                if (cs.size() > 0) {
-                    Set<String> codes = getMongoComContacts(cs);
-                    if (codes.size() > 1) {
-                        System.out.println(oc_code + " has same contacts with: " + String.join(",", codes));
-                        compack.arango.setContacts(codes);
-                    }
-                }
-            }
+//            if (compack.arango != null) {
+//                List<String> cs = new ArrayList<>();
+//                for (OrgCompanyContact contact : contacts) {
+//                    if (MiscellanyUtil.isBlank(contact.oc_contact)) continue;
+//                    if (contact.oc_status != 1) continue;
+//
+//
+//                    cs.add(contact.oc_contact);
+//                }
+//                if (cs.size() > 0) {
+//                    Set<String> codes = getMongoComContacts(cs);
+//                    if (codes.size() > 1) {
+//                        System.out.println(oc_code + " has same contacts with: " + String.join(",", codes));
+//                        compack.arango.setContacts(codes);
+//                    }
+//                }
+//            }
         }
         countDown();
     }

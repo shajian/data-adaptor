@@ -60,7 +60,7 @@ public class EsCompanyWriter extends BaseWriter {
                 postHooks.add(() -> MongodbCompanyWriter.writeDtl2Db(tasks_key));
             }
             if ((task & TaskType.arango.getValue()) != 0) {
-                postHooks.add(() -> ArangodbCompanyWriter.upsert_static(tasks_key));
+                postHooks.add(() -> ArangodbCompanyWriter.insert_static(tasks_key));
             }
         }
         postHooks.add(() -> SharedData.closeBatch(tasks_key));

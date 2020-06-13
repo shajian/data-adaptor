@@ -1,7 +1,6 @@
 package com.qianzhan.qichamao.task.com;
 
 import com.qianzhan.qichamao.config.GlobalConfig;
-import com.qianzhan.qichamao.entity.OrgCompanyDtl;
 import com.qianzhan.qichamao.graph.ArangoBusinessCompany;
 import com.qianzhan.qichamao.graph.ArangoBusinessPerson;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
@@ -41,7 +40,7 @@ public class ComMember extends ComBase {
                 if (old == null) {
                     map.put(member.om_name, member);
                 } else {
-                    old.om_position += ", " + member.om_position;
+                    old.om_position += "," + member.om_position;
                 }
             }
             if (compack.es != null) {
@@ -51,13 +50,29 @@ public class ComMember extends ComBase {
                 int dist = ComUtil.edgeLength(map.size());
                 for (String name : map.keySet()) {
                     String occupy = map.get(name).om_position;
+                    if (!MiscellanyUtil.isBlank(occupy)) {
+                        Set<String> set = new HashSet<>();
+                        for (String seg : occupy.split(",")) {
+                            set.add(seg);
+                        }
+                        occupy = String.join(",", set);
+                    }
                     int flag = NLP.recognizeName(name);
 
                     if (flag == 1) {    // company-type senior member
                         List<String> codeAreas = ComUtil.getCodeAreas(name);
                         if (codeAreas.isEmpty()) {  // unknown company
+                            //
+                            String prunedName = ComUtil.pruneCompanyName(name);
+                            if (prunedName.length() < name.length()) {
+                                codeAreas = ComUtil.getCodeAreas(prunedName);
+                                if (codeAreas.size() > 0)
+                                    name = prunedName;
+                            }
+                        }
+                        if (codeAreas.isEmpty()) {  // unknown company
                             if (GlobalConfig.getEnv() == 1) {
-                                compack.arango.oldPack.setMember(oc_code, new ArangoCpVD(name, oc_code, 1), occupy, dist, false);
+                                compack.arango.legacyPack.setMember(oc_code, new ArangoCpVD(name, oc_code, 1), occupy, dist, false);
                             } else {
                                 compack.arango.setMember(new ArangoBusinessCompany(name), occupy);
                             }
@@ -67,7 +82,7 @@ public class ComMember extends ComBase {
                                 for (String codeArea : codeAreas) {
                                     String code = codeArea.substring(0, 9);
                                     String oc_area = codeArea.substring(9);
-                                    compack.arango.oldPack.setMember(oc_code, new ArangoCpVD(code, name, oc_area), occupy, dist, share);
+                                    compack.arango.legacyPack.setMember(oc_code, new ArangoCpVD(code, name, oc_area), occupy, dist, share);
                                 }
                             } else {
                                 String codeArea = codeAreas.get(0);
@@ -77,7 +92,7 @@ public class ComMember extends ComBase {
 
                     } else if (flag == 2) {  // natural person typed senior member
                         if (GlobalConfig.getEnv() == 1) {
-                            compack.arango.oldPack.setMember(oc_code, new ArangoCpVD(name, oc_code, 2), occupy, dist, false);
+                            compack.arango.legacyPack.setMember(oc_code, new ArangoCpVD(name, oc_code, 2), occupy, dist, false);
                         } else {
                             compack.arango.setMember(new ArangoBusinessPerson(name, oc_code), occupy);
                         }

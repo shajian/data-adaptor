@@ -1,20 +1,23 @@
 package com.qianzhan.qichamao.task.com;
 
+import com.qianzhan.qichamao.config.GlobalConfig;
 import com.qianzhan.qichamao.entity.ArangoCpPack;
 import com.qianzhan.qichamao.entity.ArangoCpVD;
 import com.qianzhan.qichamao.entity.OrgCompanyList;
 import com.qianzhan.qichamao.entity.RedisCompanyIndex;
+import com.qianzhan.qichamao.graph.ArangoBusinessCompany;
+import com.qianzhan.qichamao.graph.ArangoBusinessPack;
 import com.qianzhan.qichamao.util.DbConfigBus;
 import com.qianzhan.qichamao.dal.RedisClient;
 import com.qianzhan.qichamao.dal.arangodb.ArangoComClient;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 
 import java.util.*;
 
 public class RedisCompanyIndexWriter extends BaseWriter {
-    private int pDbIndex;
-    private int nDbIndex;
     // trace all set-type keys for high efficiency.
+    // each of these keys is a company name shared by many oc_codes which are also value of the key
     private Set<String> allSetKeys;
     private String allSetKeysKey = "setkeys";
 
@@ -26,7 +29,7 @@ public class RedisCompanyIndexWriter extends BaseWriter {
     }
 
     private void init() {
-        nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
+//        nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
 
 
         allSetKeys = RedisClient.sscan(allSetKeysKey);
@@ -42,7 +45,7 @@ public class RedisCompanyIndexWriter extends BaseWriter {
         for (int task : tasks) {
             if ((task & TaskType.arango.getValue()) != 0) {
                 preHooks.add(()-> ArangoComClient.getSingleton().initGraph());
-                postHooks.add(()->ArangodbCompanyWriter.upsert_static(tasks_key));
+                postHooks.add(()->ArangodbCompanyWriter.insert_static(tasks_key));
             }
         }
         postHooks.add(() -> SharedData.closeBatch(tasks_key));
@@ -75,18 +78,19 @@ public class RedisCompanyIndexWriter extends BaseWriter {
         List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;
 
-        int count = 0;
-        ComBase.resetLatch(tasks_key, batch);
+//        int count = 0;
+//        ComBase.resetLatch(tasks_key, batch);
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
 
             if (!validateCode(company.oc_code)) continue;
-            String area = company.oc_area;
-            if (area.startsWith("71") || area.startsWith("81") || area.startsWith("82")) {
-                continue;
-            }
+//            String area = company.oc_area;
+//            if (area.startsWith("71") || area.startsWith("81") || area.startsWith("82")) {
+//                continue;
+//            }
             company.oc_name = company.oc_name.trim();
-            if (filter_out(company.oc_name)) continue;
+            if (MiscellanyUtil.isBlank(company.oc_name)) continue;
+//            if (filter_out(company.oc_name)) continue;
 
             SharedData.open(tasks_key);
             ComPack cp = SharedData.get(tasks_key);
@@ -95,24 +99,34 @@ public class RedisCompanyIndexWriter extends BaseWriter {
             cp.redis.setName(company.oc_name);
             cp.redis.setArea(company.oc_area);
 
-            pool.execute(new ComDtl(tasks_key));        // to get validness
-            count++;
+//            // for the sake of some unknown error, companies sharing a same name are not all valid,
+//            //  (e.g. company status is abnormal), we will try to keep the valid in priority.
+//            pool.execute(new ComDtl(tasks_key));        // to get validity
+//            count++;
 
             // check if arango task is turned on
-            ArangoCpPack a_com = cp.arango;
-            if (a_com != null) {
-                a_com.com = new ArangoCpVD(company.oc_code, company.oc_name, company.oc_area);
+            ArangoBusinessPack arango = cp.arango;
+            if (arango != null) {
+                if (GlobalConfig.getEnv() == 1) {
+                    ArangoCpPack a_com = arango.legacyPack;
+                    if (a_com != null) {
+                        a_com.com = new ArangoCpVD(company.oc_code, company.oc_name, company.oc_area);
+                    }
+                } else {
+                    arango.company = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
+                }
             }
+
 
             SharedData.close(tasks_key);
         }
 
 
 
-        int diff = batch-count;
-        while(ComBase.getLatch(tasks_key).getCount() != diff) {
-            Thread.sleep(20);
-        }
+//        int diff = batch-count;
+//        while(ComBase.getLatch(tasks_key).getCount() != diff) {
+//            Thread.sleep(20);
+//        }
 
         save2Redis();
 
@@ -127,8 +141,8 @@ public class RedisCompanyIndexWriter extends BaseWriter {
      *      invalid one is stored is randomly!!!!!!
      */
     public void save2Redis() {
-        Map<String, Set<String>> truesetmap = new HashMap<>();
-        Map<String, Set<String>> fakesetmap = new HashMap<>();
+        Map<String, Set<String>> truesetmap = new HashMap<>();  // these data will save as set-typed pairs in redis
+        Map<String, Set<String>> fakesetmap = new HashMap<>();  // only
 
         List<ComPack> cps = SharedData.getBatch(tasks_key);
         for (ComPack cp : cps) {
@@ -137,13 +151,11 @@ public class RedisCompanyIndexWriter extends BaseWriter {
             // for efficiency, we do not handle via ComPack here, but
             // use a map to categorize company names.
             String key = com.getName();
-            // In database, oc_code is used as unique key, so it is impossible that
-            // two different oc_codes share a same oc_name. This property is very import
-            // because it avoids that the difference is made only by oc_area.
-            String value = com.getCode()+(com.isValid()?"t":"f")+com.getArea();
+
+            String value = com.getCode()+com.getArea();
 
             if (allSetKeys.contains(key)) {     // this key may be set-type
-                if (!com.isValid()) continue;   // sorry, you are passed, since you are invalid
+//                if (!com.isValid()) continue;   // sorry, you are passed, since you are invalid
 
                 if (truesetmap.containsKey(key)) {  // add into map directly
                     truesetmap.get(key).add(value);
@@ -154,13 +166,10 @@ public class RedisCompanyIndexWriter extends BaseWriter {
                 }
             } else {
                 if (fakesetmap.containsKey(key)) {  // already has a same named company
-                    if (!com.isValid()) continue;   // sorry, you are passed
+//                    if (!com.isValid()) continue;   // sorry, you are passed
 
                     // check if the early added key-value is valid
                     Set<String> set = fakesetmap.get(key);
-                    if (set.size() == 1 && set.iterator().next().charAt(9) == 'f') {    // previous one is invalid
-                        set.clear();
-                    }
                     set.add(value);
                 } else {
                     Set<String> set = new HashSet<>();
@@ -192,21 +201,19 @@ public class RedisCompanyIndexWriter extends BaseWriter {
                     String key = values[2*i];
                     String value = values[2*i+1];
                     String old = RedisClient.getSet(key, value);// substitute old with new and return old
-                    if (old != null && old.charAt(9) == 't') {    // already exists and is valid
-                        if (value.charAt(9) == 'f') {   // set back to old
-                            RedisClient.set(key, old);
-                        } else {
-                            String oldCode = old.substring(0, 9);
-                            String newCode = value.substring(0, 9);
-                            if (!oldCode.equals(newCode)) {     // both old and new are valid and not equal
-                                // move them into set-type key
-                                RedisClient.del(key);
-                                newAdd.add(key);
-                                Set<String> oldnew = new HashSet<>();
-                                oldnew.add(old);
-                                oldnew.add(value);
-                                truesetmap.put(key, oldnew);
-                            }
+                    // if old is null or equal to new value, then nothing else should do;
+                    //  or else, remove new value from redis, and reset them as set-typed pair.
+                    if (old != null) {    // already exists and is valid
+                        String oldCode = old.substring(0, 9);
+                        String newCode = value.substring(0, 9);
+                        if (!oldCode.equals(newCode)) {     // both old and new are not equal(area is not concerned)
+                            // move them into set-type key
+                            RedisClient.del(key);
+                            newAdd.add(key);
+                            Set<String> oldnew = new HashSet<>();
+                            oldnew.add(old);
+                            oldnew.add(value);
+                            truesetmap.put(key, oldnew);
                         }
                     }
                 }

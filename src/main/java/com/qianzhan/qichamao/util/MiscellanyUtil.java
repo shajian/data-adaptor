@@ -12,6 +12,14 @@ public class MiscellanyUtil {
         return s == null || s.length() == 0 || s.trim().length() == 0;
     }
 
+    public static boolean equals(String s1, String s2) {
+        if (isBlank(s1) && isBlank(s2)) return true;
+        if (!isBlank(s1) && !isBlank(s2)) {
+            return s1.equals(s2);
+        }
+        return false;
+    }
+
     public static boolean isComposedWithAscii(String s) {
         if (isBlank(s)) return true;
         for (int i = 0; i < s.length(); ++i) {

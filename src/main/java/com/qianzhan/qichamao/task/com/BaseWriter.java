@@ -163,8 +163,11 @@ public abstract class BaseWriter {
         while (state_iter()) {
             num++;
             if (iter_print_interval == 0 || num % iter_print_interval == 0) {
-                System.out.println(String.format("state: %d, %s: %d @ %s",
-                        state, checkpointName, checkpoint, new Date()));
+                String suffix = "\033[0m";
+                String prefix = num % 2 == 0 ? "\033[35;4m" : "\033[34;4m";
+
+                System.out.println(String.format("%s-- state: %d, %s: %d @ %s --%s",
+                        prefix, state, checkpointName, checkpoint, new Date(), suffix));
             }
             if (shutdown) {
                 notice = true;

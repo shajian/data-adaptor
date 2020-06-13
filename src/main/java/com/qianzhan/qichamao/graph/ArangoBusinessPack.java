@@ -1,17 +1,33 @@
 package com.qianzhan.qichamao.graph;
 
+import com.arangodb.entity.BaseDocument;
+import com.arangodb.entity.BaseEdgeDocument;
 import com.qianzhan.qichamao.config.GlobalConfig;
 import com.qianzhan.qichamao.dal.arangodb.ArangoBusinessRepository;
 import com.qianzhan.qichamao.entity.ArangoCpPack;
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ArangoBusinessPack {
-    public ArangoCpPack oldPack;
+    public ArangoCpPack legacyPack;
 
     public String oc_code;
     public String oc_area;
+
+    public BaseDocument com;
+    public Map<String, BaseDocument> lp_map = new HashMap<>();
+    public Map<String, BaseEdgeDocument> r_lp_map = new HashMap<>();
+
+    public Map<String, BaseDocument> sh_map = new HashMap<>();
+    public Map<String, BaseEdgeDocument> r_sh_map = new HashMap<>();
+
+    public Map<String, BaseDocument> sm_map = new HashMap<>();
+    public Map<String, BaseEdgeDocument> r_sm_map = new HashMap<>();
+
     public ArangoBusinessCompany company;
 
     /**
@@ -22,92 +38,72 @@ public class ArangoBusinessPack {
       */
 
 
-    public ArangoBusinessPerson p_lp;
-    public ArangoBusinessCompany c_lp;
+//    public ArangoBusinessPerson p_lp;
+//    public ArangoBusinessCompany c_lp;
 
-    public List<ArangoBusinessPerson> p_shs;
-    public List<ArangoBusinessCompany> c_shs;
-
-    public List<ArangoBusinessPerson> p_sms;
-    public List<ArangoBusinessCompany> c_sms;
-
-    public ArangoBusinessRelation r_lp;
-    public List<ArangoBusinessRelation> r_shs;
-    public List<ArangoBusinessRelation> r_sms;
+//    public List<ArangoBusinessPerson> p_shs;
+//    public List<ArangoBusinessCompany> c_shs;
+//
+//    public List<ArangoBusinessPerson> p_sms;
+//    public List<ArangoBusinessCompany> c_sms;
+//
+//    public ArangoBusinessRelation r_lp;
+//    public List<ArangoBusinessRelation> r_shs;
+//    public List<ArangoBusinessRelation> r_sms;
 
     public ArangoBusinessPack() throws Exception {
         ArangoBusinessRepository.singleton();   // preheat to load annotations
         if (GlobalConfig.getEnv() == 1) {
-            oldPack = new ArangoCpPack();
+            legacyPack = new ArangoCpPack();
         }
     }
     public void setLp(ArangoBusinessCompany lp) {
-        c_lp = lp;
+        lp_map.put(lp.getName(), lp.to());
         String edge_key = "lp"+oc_code+lp.getKey();
-        r_lp = new ArangoBusinessRelation(lp.getId(), ArangoBusinessCompany.toId(oc_code), edge_key, 1);
+        ArangoBusinessRelation r_lp = new ArangoBusinessRelation(lp.getId(),
+                ArangoBusinessCompany.toId(oc_code), edge_key, 1);
+        r_lp_map.put(lp.getName(), r_lp.to());
     }
 
     public void setLp(ArangoBusinessPerson lp) {
-        p_lp = lp;
+        lp_map.put(lp.getName(), lp.to());
         String edge_key = "lp"+lp.getKey();
-        r_lp = new ArangoBusinessRelation(lp.getId(), ArangoBusinessCompany.toId(oc_code), edge_key, 1);
+        ArangoBusinessRelation r_lp = new ArangoBusinessRelation(lp.getId(),
+                ArangoBusinessCompany.toId(oc_code), edge_key, 1);
+        r_lp_map.put(lp.getName(), r_lp.to());
     }
 
     public void setMember(ArangoBusinessCompany m, String position) {
-        if (c_sms == null) {
-            c_sms = new ArrayList<>();
-        }
-        if (r_sms == null) {
-            r_sms = new ArrayList<>();
-        }
-        c_sms.add(m);
+        sm_map.put(m.getName(), m.to());
         String edge_key = "sm"+oc_code+m.getKey();
         ArangoBusinessRelation ed = new ArangoBusinessRelation(m.getId(), ArangoBusinessCompany.toId(oc_code), edge_key, 3);
         ed.setPosition(position);
-        r_sms.add(ed);
+        r_sm_map.put(m.getName(), ed.to());
     }
 
     public void setMember(ArangoBusinessPerson m, String position) {
-        if (p_sms == null) {
-            p_sms = new ArrayList<>();
-        }
-        if (r_sms == null) {
-            r_sms = new ArrayList<>();
-        }
-        p_sms.add(m);
+        sm_map.put(m.getName(), m.to());
         String edge_key = "sm"+m.getKey();
         ArangoBusinessRelation ed = new ArangoBusinessRelation(m.getId(), ArangoBusinessCompany.toId(oc_code), edge_key, 3);
         ed.setPosition(position);
-        r_sms.add(ed);
+        r_sm_map.put(m.getName(), ed.to());
     }
 
     public void setShare_holder(ArangoBusinessCompany sh, Double money, float ratio) {
-        if (c_shs == null) {
-            c_shs = new ArrayList<>();
-        }
-        if (r_shs == null) {
-            r_shs = new ArrayList<>();
-        }
-        c_shs.add(sh);
+        sh_map.put(sh.getName(), sh.to());
         String edge_key = "sh"+oc_code+sh.getKey();
         ArangoBusinessRelation ed = new ArangoBusinessRelation(sh.getId(), ArangoBusinessCompany.toId(oc_code), edge_key, 2);
         ed.setMoney(money);
         ed.setRatio(ratio);
-        r_shs.add(ed);
+        r_sh_map.put(sh.getName(), ed.to());
     }
 
     public void setShare_holder(ArangoBusinessPerson sh, Double money, float ratio) {
-        if (p_shs == null) {
-            p_shs = new ArrayList<>();
-        }
-        if (r_shs == null) {
-            r_shs = new ArrayList<>();
-        }
-        p_shs.add(sh);
+        sh_map.put(sh.getName(), sh.to());
         String edge_key = "sh"+sh.getKey();
         ArangoBusinessRelation ed = new ArangoBusinessRelation(sh.getId(), ArangoBusinessCompany.toId(oc_code), edge_key, 2);
         ed.setMoney(money);
         ed.setRatio(ratio);
-        r_shs.add(ed);
+        r_sh_map.put(sh.getName(), ed.to());
     }
 }

@@ -53,20 +53,39 @@ public class ArangoBusinessCompany {
      */
     public ArangoBusinessCompany(String name) {
         this.name = name;
+        if (MiscellanyUtil.isComposedWithAscii(name)) {
+            name = name.replaceAll("\\s", "");
+        }
         this.key = Cryptor.md5(name);
         this.id = String.format("%s/%s", collection, this.key);
     }
 
     public BaseDocument to() {
         BaseDocument doc = new BaseDocument(this.key);
+        doc.setId(this.id);
         doc.addAttribute("name", name);
         return doc;
     }
 
-    public static ArangoBusinessCompany from(BaseDocument doc) {
+    public boolean equals(BaseDocument doc) throws Exception {
+        return equals(from(doc));
+    }
+
+    public boolean equals(ArangoBusinessCompany c) {
+        if (this.id.equals(c.getId())) {
+            return MiscellanyUtil.equals(this.name, c.name) && MiscellanyUtil.equals(this.area, c.name);
+        }
+        return false;
+    }
+
+    public static ArangoBusinessCompany from(BaseDocument doc) throws Exception {
         ArangoBusinessCompany v = new ArangoBusinessCompany();
         v.key = doc.getKey();
         v.id = doc.getId();
+        if (!v.id.startsWith(collection)) {
+            throw new Exception("document must in collection '" + collection
+                    + "' but got from collection '"+ v.id.split("/")[0] + "'");
+        }
         Map<String, Object> props = doc.getProperties();
 
         v.area = (String) props.get("area");
@@ -74,7 +93,7 @@ public class ArangoBusinessCompany {
         return v;
     }
 
-    public static List<ArangoBusinessCompany> from(List<BaseDocument> docs) {
+    public static List<ArangoBusinessCompany> from(List<BaseDocument> docs) throws Exception {
         if (MiscellanyUtil.isArrayEmpty(docs)) return null;
         List<ArangoBusinessCompany> vds = new ArrayList<>();
         for (BaseDocument doc : docs) {

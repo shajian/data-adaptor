@@ -9,7 +9,14 @@ import com.qianzhan.qichamao.util.MiscellanyUtil;
 import java.util.*;
 
 public class CompanyPersonIdentify {
-    private static ArangoInterveneRepository cpid = ArangoInterveneRepository.singleton();
+    private static ArangoInterveneRepository intervene;
+    static {
+        try {
+            intervene = ArangoInterveneRepository.singleton();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     //===================================================
     /**
@@ -32,7 +39,7 @@ public class CompanyPersonIdentify {
     public static Map<String, List<String>> searchClusters(String name, int offset, int count) {
         List<String> center_ids = new ArrayList<>();
         try {
-            List<BaseDocument> centers = cpid.searchByName(cpid.getGraphMeta().froms()[0], name, offset, count);
+            List<BaseDocument> centers = intervene.searchByName(intervene.getGraphMeta().froms()[0], name, offset, count);
 
             if (centers == null) return null;
             for (BaseDocument center : centers) {
@@ -43,7 +50,7 @@ public class CompanyPersonIdentify {
             return null;
         }
 
-        List<BaseEdgeDocument> edges = cpid.searchByFroms(center_ids);
+        List<BaseEdgeDocument> edges = intervene.searchByFroms(center_ids);
         if (edges == null) return null;
         Map<String, List<String>> groups = new HashMap<>();
         for (BaseEdgeDocument edge : edges) {
@@ -67,7 +74,7 @@ public class CompanyPersonIdentify {
      */
     public static String searchCluster(String name, String code) {
         if (MiscellanyUtil.isBlank(name) || MiscellanyUtil.isBlank(code)) return null;
-        List<BaseEdgeDocument> edges = cpid.neighbours(code);
+        List<BaseEdgeDocument> edges = intervene.neighbours(code);
         if (MiscellanyUtil.isArrayEmpty(edges)) return null;
         String md5 = Cryptor.md5(name);
         for (BaseEdgeDocument edge : edges) {
@@ -96,8 +103,8 @@ public class CompanyPersonIdentify {
             return -1;
 
         int ret = 0;
-        List<BaseEdgeDocument> edges1 = cpid.neighbours(code1);
-        List<BaseEdgeDocument> edges2 = cpid.neighbours(code2);
+        List<BaseEdgeDocument> edges1 = intervene.neighbours(code1);
+        List<BaseEdgeDocument> edges2 = intervene.neighbours(code2);
         if (MiscellanyUtil.isArrayEmpty(edges1)) {
             ret |= 2;
         }
@@ -147,7 +154,7 @@ public class CompanyPersonIdentify {
     public static String insert2Cluster(String cluster, String oc_code, String oc_name) throws Exception {
         // insert vertex of code and edge between code and cluster center
         String cluster_id = null;
-        String vertexCollection = cpid.getGraphMeta().froms()[0];
+        String vertexCollection = intervene.getGraphMeta().froms()[0];
         if (cluster.contains("/")) {
             if (!MiscellanyUtil.isComposedWithAscii(cluster)) {
                 throw new Exception("cluster id invalid. please compose it with " +
@@ -155,7 +162,7 @@ public class CompanyPersonIdentify {
             }
             cluster_id = cluster;
         } else {
-            List<BaseDocument> docs = cpid.searchByName(vertexCollection, cluster, false, 0, 1);
+            List<BaseDocument> docs = intervene.searchByName(vertexCollection, cluster, false, 0, 1);
             long new_sq = 0;
             if (!MiscellanyUtil.isArrayEmpty(docs) && docs.get(0) != null) {
                 BaseDocument doc = docs.get(0);
@@ -166,7 +173,7 @@ public class CompanyPersonIdentify {
             BaseDocument cluster_center = new BaseDocument(key);
             cluster_center.addAttribute("name", cluster);
             cluster_center.addAttribute("sq", new_sq);
-            cluster_id = cpid.insert(vertexCollection, cluster_center);
+            cluster_id = intervene.insert(vertexCollection, cluster_center);
             if (MiscellanyUtil.isBlank(cluster_id) || !cluster_id.contains("/")) {
                 throw new Exception("failed to insert a new cluster center vertex with name of " + cluster);
             }
@@ -174,10 +181,10 @@ public class CompanyPersonIdentify {
         // insert code vertex and edge
         BaseDocument codeVertex = new BaseDocument(oc_code);
         codeVertex.addAttribute("name", oc_name);
-        String code_id = cpid.insert(vertexCollection, codeVertex);
+        String code_id = intervene.insert(vertexCollection, codeVertex);
         String from_key = cluster_id.split("/")[0];
         BaseEdgeDocument edge = new BaseEdgeDocument(from_key+oc_code, cluster_id, code_id);
-        cpid.insert(edge);
+        intervene.insert(edge);
         return cluster_id;
     }
 
@@ -197,9 +204,9 @@ public class CompanyPersonIdentify {
         if (MiscellanyUtil.isBlank(name) || MiscellanyUtil.isBlank(code1) || MiscellanyUtil.isBlank(code2))
             return;
 
-        String vcoll = cpid.getGraphMeta().froms()[0];
-        List<BaseEdgeDocument> edges1 = cpid.neighbours(vcoll + "/" + code1);
-        List<BaseEdgeDocument> edges2 = cpid.neighbours(vcoll + "/" +code2);
+        String vcoll = intervene.getGraphMeta().froms()[0];
+        List<BaseEdgeDocument> edges1 = intervene.neighbours(vcoll + "/" + code1);
+        List<BaseEdgeDocument> edges2 = intervene.neighbours(vcoll + "/" +code2);
         String md5 = Cryptor.md5(name);
         String cluster1 = null, cluster2 = null;
         String edge_key1 = null, edge_key2 = null;
@@ -239,33 +246,33 @@ public class CompanyPersonIdentify {
 
             String toCheckIsolated = null;
             if (sq1 > sq2) {                // keep 2, remove 1
-                cpid.delete_e(edge_key1);
+                intervene.delete_e(edge_key1);
                 BaseEdgeDocument edge = new BaseEdgeDocument(sq2+md5+code1, cluster2, code1);
-                cpid.insert(edge);
+                intervene.insert(edge);
                 toCheckIsolated = cluster1;
             } else {
-                cpid.delete_e(edge_key2);
+                intervene.delete_e(edge_key2);
                 BaseEdgeDocument edge = new BaseEdgeDocument(sq1+md5+code2, cluster1, code2);
-                cpid.insert(edge);
+                intervene.insert(edge);
                 toCheckIsolated = cluster2;
             }
-            List<BaseEdgeDocument> remindEdges = cpid.neighbours(toCheckIsolated);
+            List<BaseEdgeDocument> remindEdges = intervene.neighbours(toCheckIsolated);
             if (MiscellanyUtil.isArrayEmpty(remindEdges)) {
-                cpid.delete(toCheckIsolated);
+                intervene.delete(toCheckIsolated);
             }
         } else if (cluster1 != null) {
             // insert code2 into cluster1
             BaseDocument codeVertex2 = new BaseDocument(code2);
             codeVertex2.addAttribute("name", name2);
             BaseEdgeDocument edge = new BaseEdgeDocument(sq1+md5+code2, cluster1, code2);
-            cpid.insert(vcoll, codeVertex2);
-            cpid.insert(edge);
+            intervene.insert(vcoll, codeVertex2);
+            intervene.insert(edge);
         } else if (cluster2 != null) {
             BaseDocument codeVertex1 = new BaseDocument(code1);
             codeVertex1.addAttribute("name", name1);
             BaseEdgeDocument edge = new BaseEdgeDocument(sq2+md5+code1, cluster2, code1);
-            cpid.insert(vcoll, codeVertex1);
-            cpid.insert(edge);
+            intervene.insert(vcoll, codeVertex1);
+            intervene.insert(edge);
         } else {
             throw new Exception("no edge between name and code1 or between name or code2, " +
                     "converting to white can not be done, please add white pair using " +
@@ -280,6 +287,6 @@ public class CompanyPersonIdentify {
     public static void breakRelation(String cluster, String code) {
         if (MiscellanyUtil.isBlank(cluster) || MiscellanyUtil.isBlank(code) || !cluster.contains("/")) return;
         String edge_key = cluster.split("/")[1] + code;
-        cpid.delete_e(edge_key);
+        intervene.delete_e(edge_key);
     }
 }

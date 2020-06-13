@@ -1,5 +1,8 @@
 state=1
 
+// 1: test; 2: publish
+env=1
+
 # multi_thread mode?
 multi_thread=false
 # max numbers of multi-threads. If non-positive, it is automatically set(number of cores of cpu)

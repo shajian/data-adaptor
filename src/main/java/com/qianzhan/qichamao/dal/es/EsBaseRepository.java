@@ -220,7 +220,7 @@ public abstract class EsBaseRepository<T> {
         String id = (String) map.remove(indexMeta.id());
         if (map.size() > 0) {
             UpdateRequest request = new UpdateRequest(indexMeta.index(), indexMeta.type(), id).doc(map);
-            request.docAsUpsert(false); // explicitly turn off upsert
+            request.docAsUpsert(false); // explicitly turn off insert
             try {
                 UpdateResponse resp = client.update(request, RequestOptions.DEFAULT);
                 /**
@@ -237,13 +237,13 @@ public abstract class EsBaseRepository<T> {
                  */
                 long version = resp.getVersion();
                 if (resp.getResult() == DocWriteResponse.Result.CREATED) {
-                    // insert this doc (upsert)
+                    // insert this doc (insert)
                 } else if (resp.getResult() == DocWriteResponse.Result.UPDATED) {
                     // partially update this doc
                 } else if (resp.getResult() == DocWriteResponse.Result.NOOP) {
                     // no operation on this doc
                 } else if (resp.getResult() == DocWriteResponse.Result.NOT_FOUND) {
-                    // not found for this doc (can't go here for upsert/index/create)
+                    // not found for this doc (can't go here for insert/index/create)
                 }
                 ReplicationResponse.ShardInfo shardInfo = resp.getShardInfo();
                 if (shardInfo.getTotal() != shardInfo.getSuccessful()) {

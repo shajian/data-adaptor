@@ -75,8 +75,16 @@ public class ComShareHolder extends ComBase {
                     if (flag == 1) {    // company-type senior member
                         List<String> codeAreas = ComUtil.getCodeAreas(key);
                         if (codeAreas.isEmpty()) {
+                            String prunedName = ComUtil.pruneCompanyName(key);
+                            if (prunedName.length() < key.length()) {
+                                codeAreas = ComUtil.getCodeAreas(prunedName);
+                                if (codeAreas.size() > 0)
+                                    key = prunedName;
+                            }
+                        }
+                        if (codeAreas.isEmpty()) {
                             if (GlobalConfig.getEnv() == 1) {
-                                compack.arango.oldPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 1), money, ratio, dist, false);
+                                compack.arango.legacyPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 1), money, ratio, dist, false);
                             } else {
                                 compack.arango.setShare_holder(new ArangoBusinessCompany(key), money, ratio);
                             }
@@ -86,7 +94,7 @@ public class ComShareHolder extends ComBase {
                                 for (String codeArea : codeAreas) {
                                     String code = codeArea.substring(0, 9);
                                     String oc_area = codeArea.substring(9);
-                                    compack.arango.oldPack.setShare_holder(oc_code, new ArangoCpVD(code, key, oc_area), money, ratio, dist, share);
+                                    compack.arango.legacyPack.setShare_holder(oc_code, new ArangoCpVD(code, key, oc_area), money, ratio, dist, share);
                                 }
                             } else {
                                 String ca = codeAreas.get(0);
@@ -96,7 +104,7 @@ public class ComShareHolder extends ComBase {
 
                     } else if (flag == 2) {
                         if (GlobalConfig.getEnv() == 1) {
-                            compack.arango.oldPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 2), money, ratio, dist, false);
+                            compack.arango.legacyPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 2), money, ratio, dist, false);
                         } else {
                             compack.arango.setShare_holder(new ArangoBusinessPerson(key, oc_code), money, ratio);
                         }

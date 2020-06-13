@@ -72,8 +72,16 @@ public class ComDtl extends ComBase {
                         List<String> codeAreas = ComUtil.getCodeAreas(dtl.od_faRen);
 
                         if (codeAreas.isEmpty()) {      // this company is unknown
+                            String prunedName = ComUtil.pruneCompanyName(dtl.od_faRen);
+                            if (prunedName.length() < dtl.od_faRen.length()) {
+                                codeAreas = ComUtil.getCodeAreas(prunedName);
+                                if (codeAreas.size() > 0)
+                                    dtl.od_faRen = prunedName;
+                            }
+                        }
+                        if (codeAreas.isEmpty()) {
                             if (GlobalConfig.getEnv() == 1) {
-                                a_com.oldPack.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 1), false);
+                                a_com.legacyPack.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 1), false);
                             } else {
                                 a_com.setLp(new ArangoBusinessCompany(dtl.od_faRen));
                             }
@@ -84,7 +92,7 @@ public class ComDtl extends ComBase {
                                     String code = codeArea.substring(0, 9);
                                     String area = codeArea.substring(9);
                                     // set legal person
-                                    a_com.oldPack.setLp(oc_code, new ArangoCpVD(code, dtl.od_faRen, area), share);
+                                    a_com.legacyPack.setLp(oc_code, new ArangoCpVD(code, dtl.od_faRen, area), share);
                                 }
                             } else {
                                 String codeArea = codeAreas.get(0);
@@ -95,16 +103,16 @@ public class ComDtl extends ComBase {
 
                     } else if (flag == 2) {
                         if (GlobalConfig.getEnv() == 1) {
-                            a_com.oldPack.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 2), false);
+                            a_com.legacyPack.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 2), false);
                         } else {
                             a_com.setLp(new ArangoBusinessPerson(dtl.od_faRen, oc_code));
                         }
                     }
                 }
-                if (compack.redis != null) {
-                    byte status = ComUtil.getCompanyStatus(dtl.od_ext);
-                    compack.redis.setValid(ComUtil.isCompanyStatusNormal(status));
-                }
+//                if (compack.redis != null) {
+//                    byte status = ComUtil.getCompanyStatus(dtl.od_ext);
+//                    compack.redis.setValid(ComUtil.isCompanyStatusNormal(status));
+//                }
             }
 
             // post handling

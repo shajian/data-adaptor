@@ -2,7 +2,6 @@ package com.qianzhan.qichamao.dal.mybatis;
 
 import com.qianzhan.qichamao.dal.DbName;
 import com.qianzhan.qichamao.entity.*;
-import com.qichamao.entity.*;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;

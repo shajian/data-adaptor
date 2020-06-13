@@ -1,7 +1,6 @@
 package com.qianzhan.qichamao.dal.hbase;
 
 import com.qianzhan.qichamao.entity.*;
-import com.qichamao.entity.*;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;

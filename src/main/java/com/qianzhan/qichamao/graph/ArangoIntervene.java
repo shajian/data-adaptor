@@ -27,12 +27,11 @@ package com.qianzhan.qichamao.graph;
  *          existing cluster is appropriate) should they be added in.
  *
  */
-@ArangoGraphMeta(db = "company", graph = "gcpid", edge = "cpidr", froms = {"cpid"}, tos = {"cpid"})
-@ArangoCollectionMeta(db = "company", collection = "cpid", indices = {"name", "sq"})
+@ArangoGraphMeta(db = "intervene", graph = "graph", edge = "relation", froms = {"person"}, tos = {"company"})
 
 @ArangoGraphMeta(env = 2, db = "intervene", graph = "graph", edge = "relation", froms = {"person"}, tos = {"company"})
 @ArangoCollectionMeta(env = 2, db = "intervene", collection = "company", indices = {"sq"})
 @ArangoCollectionMeta(env = 2, db = "intervene", collection = "person", indices = {"name", "sq"})
-public class ArangoGraphCpId {
+public class ArangoIntervene {
 
 }
