@@ -9,7 +9,7 @@ import com.arangodb.model.DocumentCreateOptions;
 import com.qianzhan.qichamao.entity.ArangoCpED;
 import com.qianzhan.qichamao.entity.ArangoCpVD;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
-import com.qianzhan.qichamao.graph.ArangoGraphPath;
+import com.qianzhan.qichamao.graph.ArangoBusinessPath;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -323,7 +323,7 @@ public class ArangoComClient {
      * @param maxDepth
      * @return
      */
-    public List<ArangoGraphPath> traverse_VE(String start_key, int minDepth, int maxDepth) {
+    public List<ArangoBusinessPath> traverse_VE(String start_key, int minDepth, int maxDepth) {
         if (minDepth < 1) minDepth = 1;
         if (maxDepth < minDepth) maxDepth = minDepth;
         ArangoDatabase db = client.db(dbName);
@@ -338,11 +338,11 @@ public class ArangoComClient {
                 minDepth, maxDepth, vertexCollName, start_key, graphName
         );
         ArangoCursor<String> cursor = db.query(aql, String.class);
-        List<ArangoGraphPath> paths = new ArrayList<>();
+        List<ArangoBusinessPath> paths = new ArrayList<>();
         while (cursor.hasNext()) {
             String json = cursor.next();
 
-            paths.add(JSON.parseObject(json, ArangoGraphPath.class));
+            paths.add(JSON.parseObject(json, ArangoBusinessPath.class));
         }
 
         try {

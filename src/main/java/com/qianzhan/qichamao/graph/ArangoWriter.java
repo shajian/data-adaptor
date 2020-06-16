@@ -1,6 +1,5 @@
 package com.qianzhan.qichamao.graph;
 
-import com.arangodb.ArangoGraph;
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.entity.BaseEdgeDocument;
 import com.qianzhan.qichamao.config.GlobalConfig;
@@ -186,7 +185,7 @@ public class ArangoWriter {
         List<ComPack> newAdds = new ArrayList<>();
         for (ComPack cp : cps) {
             ArangoBusinessPack p = cp.arango;
-            List<ArangoGraphPath> olds = business.traverse(
+            List<ArangoBusinessPath> olds = business.traverse(
                     ArangoBusinessCompany.collection+"/"+p.oc_code, 0,1, 0x1|0x2);
             if (olds.size() == 0) {
                 newAdds.add(cp);
@@ -196,15 +195,15 @@ public class ArangoWriter {
             // NB: All companies themselves are responsible for updating(except inserting) company-type vertices,
             //      so, here we only update the company itself, and insert other newly added company-type vertices.
 
-            List<ArangoGraphPath> remove = new ArrayList<>();
+            List<ArangoBusinessPath> remove = new ArrayList<>();
 
-            for (ArangoGraphPath old : olds) {
+            for (ArangoBusinessPath old : olds) {
                 if (old.edge == null) { // company itself
                     if (p.company.equals(old.vertex))
                         p.com = null;
                 } else {
-                    String prefix = old.edge.getKey().substring(0, 2);
-                    Object name = old.vertex.getAttribute("name");
+                    String prefix = old.edge._key.substring(0, 2);
+                    Object name = old.vertex.name;
                     if (prefix.equals("lp")) {
                         if (!p.lp_map.containsKey(name)) // old legal person no longer exist
                             remove.add(old);
@@ -219,7 +218,7 @@ public class ArangoWriter {
                         else {
                             p.sm_map.remove(name);      //
                             BaseEdgeDocument new_sm = p.r_sm_map.get(name);
-                            new_sm.setFrom(old.edge.getFrom()); // update _from, since vertex merging
+                            new_sm.setFrom(old.edge._from); // update _from, since vertex merging
                         }
                     }
                     else if (prefix.equals("sh")) {
@@ -228,7 +227,7 @@ public class ArangoWriter {
                         else {
                             p.sh_map.remove(name);
                             BaseEdgeDocument new_sh = p.r_sh_map.get(name);
-                            new_sh.setFrom(old.edge.getFrom());
+                            new_sh.setFrom(old.edge._from);
                         }
                     }
                 }
@@ -238,9 +237,9 @@ public class ArangoWriter {
             // we first remove the related edges, and if person-type vertices are isolated, remove them also.
             List<String> remove_Edges = new ArrayList<>();
             List<String> remove_Vertices = new ArrayList<>();
-            for (ArangoGraphPath path : remove) {
-                remove_Edges.add(path.edge.getKey());
-                remove_Vertices.add(path.vertex.getId());
+            for (ArangoBusinessPath path : remove) {
+                remove_Edges.add(path.edge._key);
+                remove_Vertices.add(path.vertex._id);
             }
             business.delete(ArangoBusinessRelation.collection, remove_Edges);
             if (remove_Vertices.size() > 0) {

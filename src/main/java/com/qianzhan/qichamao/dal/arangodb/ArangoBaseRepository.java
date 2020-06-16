@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.arangodb.*;
 import com.arangodb.entity.*;
-import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.DocumentCreateOptions;
 import com.arangodb.model.PersistentIndexOptions;
 import com.arangodb.velocystream.Request;
@@ -329,7 +328,7 @@ public abstract class ArangoBaseRepository<T> {
      * @param ret_flag  because data volumn may be huge, so `ret_flag` is used to control the data field returned.
      *                  1. vertex; 2. edge; 4. vertices; 8. edges;
      */
-    public List<ArangoGraphPath> traverse(String start_id, int min_depth, int max_depth, int ret_flag) {
+    public List<ArangoBusinessPath> traverse(String start_id, int min_depth, int max_depth, int ret_flag) {
         if (MiscellanyUtil.isBlank(start_id) || !start_id.contains("/")) return null;
         if (max_depth < 2) max_depth = 2;
         ArangoDatabase db = client.db(database);
@@ -357,12 +356,12 @@ public abstract class ArangoBaseRepository<T> {
                 min_depth, max_depth, start_id, graphMeta.graph(), String.join(", ", pairs)
         );
         ArangoCursor<String> cursor = db.query(aql, String.class);
-        List<ArangoGraphPath> paths = new ArrayList<>();
+        List<ArangoBusinessPath> paths = new ArrayList<>();
 
         while (cursor.hasNext()) {
             String json = cursor.next();
             if (MiscellanyUtil.isBlank(json)) continue;
-            paths.add(JSON.parseObject(json, ArangoGraphPath.class));
+            paths.add(JSON.parseObject(json, ArangoBusinessPath.class));
         }
 
         try {
@@ -606,7 +605,7 @@ public abstract class ArangoBaseRepository<T> {
         return edges;
     }
 
-    public ArangoGraphPath shortestPath(String from, String to) {
+    public ArangoBusinessPath shortestPath(String from, String to) {
         if (MiscellanyUtil.isBlank(from) || MiscellanyUtil.isBlank(to)) return null;
         ArangoDatabase db = client.db(database);
         String aql = String.format(
@@ -614,14 +613,14 @@ public abstract class ArangoBaseRepository<T> {
                 from, to, graphMeta.graph()
         );
         ArangoCursor<String> cursor = db.query(aql, String.class);
-        List<ArangoGraphPath> segments = new ArrayList<>();
-        ArangoGraphPath path = new ArangoGraphPath();
+        List<ArangoBusinessPath> segments = new ArrayList<>();
+        ArangoBusinessPath path = new ArangoBusinessPath();
         path.vertices = new ArrayList<>();
         path.edges = new ArrayList<>();
         while (cursor.hasNext()) {
             String json = cursor.next();
             if (json == null) continue;
-            ArangoGraphPath segment = JSON.parseObject(json, ArangoGraphPath.class);
+            ArangoBusinessPath segment = JSON.parseObject(json, ArangoBusinessPath.class);
             if (segment != null && segment.vertices != null) {
                 path.vertices.add(segment.vertex);
                 path.edges.add(segment.edge);
@@ -637,7 +636,7 @@ public abstract class ArangoBaseRepository<T> {
         return path;
     }
 
-    public List<ArangoGraphPath> kShortestPaths(String from, String to, int k) {
+    public List<ArangoBusinessPath> kShortestPaths(String from, String to, int k) {
         if (MiscellanyUtil.isBlank(from) || MiscellanyUtil.isBlank(to)) return null;
         if (k < 1) k = 1;
         if (k > 3) k = 3;
@@ -647,11 +646,11 @@ public abstract class ArangoBaseRepository<T> {
                 from, to, graphMeta.graph(), k
         );
         ArangoCursor<String> cursor = db.query(aql, String.class);
-        List<ArangoGraphPath> paths = new ArrayList<>();
+        List<ArangoBusinessPath> paths = new ArrayList<>();
         while (cursor.hasNext()) {
             String json = cursor.next();
             if (json == null) continue;
-            paths.add(JSON.parseObject(json, ArangoGraphPath.class));
+            paths.add(JSON.parseObject(json, ArangoBusinessPath.class));
         }
         return paths;
     }

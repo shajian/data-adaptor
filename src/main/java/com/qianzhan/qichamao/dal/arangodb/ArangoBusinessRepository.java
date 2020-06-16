@@ -11,7 +11,6 @@ import com.qianzhan.qichamao.entity.CompanyTriple;
 import com.qianzhan.qichamao.graph.*;
 import com.qianzhan.qichamao.util.Cryptor;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
-import org.elasticsearch.common.recycler.Recycler;
 
 import java.io.IOException;
 import java.util.*;
@@ -64,7 +63,7 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
         // search people vertices by name
         String coll = ArangoBusinessPerson.collection;
         String aql = String.format(
-                "FOR v in %s FILTER v.name == '%s' SORT v.degree, v.key DESC limit %d, %d RETURN v",
+                "FOR v in %s FILTER v.name == '%s' SORT v.degree DESC, v.key limit %d, %d RETURN v",
                 coll, name, offset, count
         );
         ArangoDatabase db = client.db(database);
@@ -75,7 +74,7 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
         // traverse current batch of persons
         for (BaseDocument vertex : vertices) {
             if (vertex == null) continue;
-            PersonAggregation aggregation = aggregate(vertex.getId(), 5);
+            PersonAggregation aggregation = aggregate(vertex.getId(), 3);
             if (aggregation != null) aggregations.add(aggregation);
         }
 
@@ -182,45 +181,84 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
     private PersonAggregation aggregate(String person_id, int max) {
         // find all neighbours of this person
         // note that we limit number to 100.
-        String aql = "FOR v, e in 1..3 OUTBOUND '%s' GRAPH '%s' LIMIT 100 RETURN {vertex: v, edge: e}";
+        String aql = "FOR v, e in 1..3 ANY '%s' GRAPH '%s' OPTIONS {bfs: true} LIMIT 100 RETURN {vertex: v, edge: e}";
         ArangoDatabase db = client.db(database);
         List<String> results = db.query(String.format(aql, person_id, graphMeta.graph()), String.class)
                 .asListRemaining();
 
         PersonAggregation aggregation = new PersonAggregation();
         aggregation.person = person_id;
+        Map<String, ArangoBusinessVertex> map = new HashMap<>();
         for (String result : results) {
             if (result == null) continue;
 
-            ArangoGraphPath path = JSON.parseObject(result, ArangoGraphPath.class);
-            if (path.edge.getFrom().equals(person_id)) {
-                if (aggregation.companies.size() < max) {
-                    CompanyTriple triple = new CompanyTriple();
-                    triple.oc_name = (String) path.vertex.getAttribute("name");
-                    triple.oc_code = path.vertex.getKey();
-                    triple.oc_area = (String) path.vertex.getAttribute("area");
-                    aggregation.companies.add(triple);
+            ArangoBusinessPath path = JSON.parseObject(result, ArangoBusinessPath.class);
+            if (path.edge._from.equals(person_id)) {
+                if (map.size() < max && !map.containsKey(path.vertex._key)) {
+                    map.put(path.vertex._key, path.vertex);
                 }
-                Long tp = (Long) path.edge.getAttribute("type");
+                Long tp = path.edge.type;
                 if (tp != null) {
                     long t = tp;
-                    if (t == 1) aggregation.lps.add(path.vertex.getKey());
-                    else if (t == 2) aggregation.shs.add(path.vertex.getKey());
-                    else if (t == 3) aggregation.sms.add(path.vertex.getKey());
+                    if (t == 1) aggregation.lps.add(path.vertex._key);
+                    else if (t == 2) aggregation.shs.add(path.vertex._key);
+                    else if (t == 3) aggregation.sms.add(path.vertex._key);
                 }
-            } else if (path.vertex.getId().startsWith(ArangoBusinessPerson.collection)
+            } else if (path.vertex._id.startsWith(ArangoBusinessPerson.collection)
                     && aggregation.persons.size() < 5) {
                 if (GlobalConfig.getEnv() == 1) {
-                    Long type = (Long) path.vertex.getAttribute("type");
-                    if (type != null && type == 2) {
-                        aggregation.persons.add((String) path.vertex.getAttribute("name"));
-                    }
+                    if (path.vertex._key.length() > 12)
+                        aggregation.persons.add(path.vertex.name);
                 } else {
-                    aggregation.persons.add((String) path.vertex.getAttribute("name"));
+                    aggregation.persons.add(path.vertex.name);
                 }
             }
         }
+        aggregation.companies = new ArrayList<>();
+        if (map.values().size()<=max) {
+            for (ArangoBusinessVertex v : map.values()) {
+                aggregation.companies.add(new CompanyTriple(v._key, v.name, v.area));
+            }
+            return aggregation;
+        }
 
+        long degree = -1;
+        List<ArangoBusinessVertex> a = new ArrayList<>();
+        List<ArangoBusinessVertex> b = new ArrayList<>();
+        List<ArangoBusinessVertex> c = new ArrayList<>(map.values());
+        while (true) {
+            for (ArangoBusinessVertex v : c) {
+                if (degree < 0) {
+                    if (v.degree == null) { degree = 0; b.add(v); }
+                    else { degree = v.degree; a.add(v); }
+                } else {
+                    if (v.degree != null && v.degree >= degree) {
+                        a.add(v);
+                    } else {
+                        b.add(v);
+                    }
+                }
+            }
+            if (a.size() > 0 && a.size() <= max - aggregation.companies.size()) {
+                for (ArangoBusinessVertex v : a) {
+                    aggregation.companies.add(new CompanyTriple(v._key, v.name, v.area));
+                }
+                c = b;
+            } else if (a.size() > 0) {
+                c = a;
+            } else {
+                for (int i = aggregation.companies.size(); i < max && i < b.size(); i++) {
+                    ArangoBusinessVertex v = b.get(i);
+                    aggregation.companies.add(new CompanyTriple(v._key, v.name, v.area));
+                }
+                c.clear();
+            }
+            if (c.isEmpty() || aggregation.companies.size() >= max) break;
+
+            b.clear();
+            a.clear();
+            degree = -1;
+        }
         return aggregation;
     }
 
@@ -240,22 +278,22 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
                     ArangoBusinessCompany.collection, code, graphMeta.graph(), ArangoBusinessPerson.collection);
         ArangoDatabase db = client.db(database);
         ArangoCursor<String> cursor = db.query(aql, String.class);
-        List<ArangoGraphPath> paths = new ArrayList<>();
+        List<ArangoBusinessPath> paths = new ArrayList<>();
         for (String json : cursor.asListRemaining()) {
             if (json == null) continue;
-            paths.add(JSON.parseObject(json, ArangoGraphPath.class));
+            paths.add(JSON.parseObject(json, ArangoBusinessPath.class));
         }
         Map<String, Float> map = new HashMap<>();
-        for (ArangoGraphPath path : paths) {
+        for (ArangoBusinessPath path : paths) {
             if (MiscellanyUtil.isArrayEmpty(path.vertices) || MiscellanyUtil.isArrayEmpty(path.edges)) continue;
 
             int size = path.vertices.size();
-            String sh = (String) path.vertices.get(size - 1).getAttribute("name");  // SHARE HOLDER
+            String sh = (String) path.vertices.get(size - 1).name;  // SHARE HOLDER
             if (MiscellanyUtil.isBlank(sh)) continue;
 
             float ratio = 1;
-            for (BaseEdgeDocument edge : path.edges) {
-                Float r = (Float) edge.getAttribute("ratio");
+            for (ArangoBusinessEdge edge : path.edges) {
+                Double r = edge.ratio;
                 if (r != null) {
                     ratio *= r;
                 }

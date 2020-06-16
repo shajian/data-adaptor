@@ -5,6 +5,9 @@ import com.arangodb.entity.BaseEdgeDocument;
 import com.qianzhan.qichamao.config.GlobalConfig;
 import com.qianzhan.qichamao.dal.arangodb.ArangoBusinessRepository;
 import com.qianzhan.qichamao.dal.arangodb.ArangoInterveneRepository;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
+import com.qianzhan.qichamao.entity.OrgCompanyDimBatch;
+import com.qianzhan.qichamao.entity.OrgCompanyList;
 import com.qianzhan.qichamao.graph.ArangoBusinessCompany;
 import com.qianzhan.qichamao.graph.ArangoBusinessPack;
 import com.qianzhan.qichamao.graph.ArangoBusinessPerson;
@@ -12,13 +15,10 @@ import com.qianzhan.qichamao.graph.ArangoWriter;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.util.NLP;
 import com.qianzhan.qichamao.util.parallel.Master;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
-import com.qianzhan.qichamao.entity.OrgCompanyDimBatch;
-import com.qianzhan.qichamao.entity.OrgCompanyList;
-import org.hibernate.validator.constraints.SafeHtml;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -576,6 +576,13 @@ public class ArangodbCompanyWriter extends BaseWriter {
         ArangoBusinessRepository.singleton();
     }
 
+    /**
+     * update all data in ArangoDB day by day.
+     * This state is corresponding to state1 which usually means writing data into
+     * database firstly.
+     * @return
+     * @throws Exception
+     */
     protected boolean state5_inner() throws Exception {
         // todo update ArangoDB `company-person-relation`
         // pop data from synchronized table
@@ -623,6 +630,11 @@ public class ArangodbCompanyWriter extends BaseWriter {
         ArangoBusinessRepository.singleton();
     }
 
+    /**
+     * update degree of vertices
+     * @return
+     * @throws Exception
+     */
     protected boolean state6_inner() throws Exception {
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
         int company_vertex_id_length = ArangoBusinessCompany.collection.length()+10;
@@ -648,7 +660,7 @@ public class ArangodbCompanyWriter extends BaseWriter {
             List<BaseEdgeDocument> edges = business.searchByTos(tos);
             if (edges == null) return true;
 
-//            List<String> froms = new ArrayList<>(edges.size());
+            // key: vertex key, value: vertex out-in degree
             Map<String, Integer> map = new HashMap<>();     //
             List<String> keys = new ArrayList<>();
             for (BaseEdgeDocument edge : edges) {

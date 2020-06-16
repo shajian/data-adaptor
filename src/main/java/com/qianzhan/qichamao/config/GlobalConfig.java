@@ -2,7 +2,7 @@ package com.qianzhan.qichamao.config;
 
 public class GlobalConfig {
     // environment: it is common that many differences exist between TEST and PUBLISH
-    private static byte env;
+    private static byte env = 1;
     public static byte getEnv() {
         return env;
     }

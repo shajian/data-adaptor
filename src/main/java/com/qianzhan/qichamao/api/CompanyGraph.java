@@ -21,7 +21,7 @@ public class CompanyGraph {
             }
         } catch (Exception e) {
             // todo log
-            return null;
+            return e.getMessage();
         }
     }
 }
