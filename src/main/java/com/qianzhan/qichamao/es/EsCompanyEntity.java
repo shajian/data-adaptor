@@ -1,9 +1,6 @@
-package com.qianzhan.qichamao.entity;
+package com.qianzhan.qichamao.es;
 
-import com.qianzhan.qichamao.dal.es.EsAnalyzer;
-import com.qianzhan.qichamao.dal.es.EsFieldType;
-import com.qianzhan.qichamao.dal.es.EsFieldMeta;
-import com.qianzhan.qichamao.dal.es.EsIndexMeta;
+import com.qianzhan.qichamao.entity.OrgCompanyList;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -23,7 +20,7 @@ import java.util.List;
 @Getter
 @ToString
 @EsIndexMeta(index = "company_2", id = "oc_code")
-public class EsCompany {
+public class EsCompanyEntity {
     /**
      * 1. type=="text", if analyzers.length==1,
      */

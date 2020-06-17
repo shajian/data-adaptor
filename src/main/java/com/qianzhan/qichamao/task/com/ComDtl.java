@@ -9,7 +9,7 @@ import com.qianzhan.qichamao.util.NLP;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.MongoComDtl;
 import com.qianzhan.qichamao.entity.ArangoCpVD;
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.entity.OrgCompanyDtl;
 
 import java.text.ParseException;
@@ -25,7 +25,7 @@ public class ComDtl extends ComBase {
 
     @Override
     public void run() {
-        EsCompany e_com = compack.es;
+        EsCompanyEntity e_com = compack.es;
         MongoComDtl m_com = compack.mongo;
         ArangoBusinessPack a_com = compack.arango;
         String oc_code = null;

@@ -1,6 +1,6 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.entity.OrgCompanyContact;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.dal.mongodb.MongoClientRegistry;
@@ -27,7 +27,7 @@ public class ComContact extends ComBase {
         if (oc_code != null) {
             List<OrgCompanyContact> contacts = MybatisClient.getCompanyContacts(oc_code);
             if (compack.es != null) {
-                EsCompany c = compack.es;
+                EsCompanyEntity c = compack.es;
                 List<String> m_phones = new ArrayList<>();
                 List<String> f_phones = new ArrayList<>();
                 List<String> mails = new ArrayList<>();

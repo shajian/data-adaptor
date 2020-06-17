@@ -1,13 +1,10 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.config.GlobalConfig;
-import com.qianzhan.qichamao.dal.es.EsCompanyInput;
-import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
-import com.qianzhan.qichamao.entity.EsCompany;
-import com.qianzhan.qichamao.util.MiscellanyUtil;
-import com.qianzhan.qichamao.api.EsCompanySearcher;
 import com.qianzhan.qichamao.dal.RedisClient;
-import com.qianzhan.qichamao.entity.EsCompanyTripleMatch;
+import com.qianzhan.qichamao.es.EsCompanyEntityLegacy;
+import com.qianzhan.qichamao.es.EsCompanyLegacyRepository;
+import com.qianzhan.qichamao.es.EsSearchCompanyLegacyParam;
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -130,38 +127,41 @@ public class ComUtil {
                     codes[i] = ca.substring(0,9);
                     i++;
                 }
-                EsCompanyInput input = new EsCompanyInput();
-                input.setIds(codes);
-                input.setSrc_inc("oc_code", "oc_status", "oc_area");
-                List<EsCompany> companies = EsCompanyRepository.singleton().mget(input);
-                for (EsCompany company : companies) {
+//                EsSearchCompanyParam param = new EsSearchCompanyParam();
+                EsSearchCompanyLegacyParam param = new EsSearchCompanyLegacyParam();
+                param.setIds(codes);
+                param.setSrc_inc("oc_code", "oc_status", "oc_area");
+//                List<EsCompanyEntity> companies = EsCompanyRepository.singleton().mget(param);
+                List<EsCompanyEntityLegacy> companies = EsCompanyLegacyRepository.singleton().mget(param);
+                for (EsCompanyEntityLegacy company : companies) {
                     if (isCompanyStatusNormal(company.getOc_status())) {
                         codeAreas.add(company.getOc_code()+company.getOc_area());
                     }
                 }
+                if (codeAreas.isEmpty()) codeAreas.add(codeareas.iterator().next());
             } else {
                 // search from ES
-                try {
-                    List<EsCompanyTripleMatch> matches = EsCompanySearcher.name2code(oc_name);
-                    String backup = null;
-                    for (EsCompanyTripleMatch match : matches) {
-                        if (match.getConfidence() > 0.8) {
-                            if (backup == null) {
-                                backup = match.getOc_code() + match.getOc_area();
-                            }
-
-                            byte status = match.getOc_status();
-                            if (isCompanyStatusNormal(status)) {
-                                codeAreas.add(match.getOc_code() + match.getOc_area());
-                            }
-                        }
-                    }
-                    if (codeAreas.isEmpty() && backup != null) { //
-                        codeAreas.add(backup);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    List<EsCompanyTripleMatch> matches = EsCompanySearcher.name2code(oc_name);
+//                    String backup = null;
+//                    for (EsCompanyTripleMatch match : matches) {
+//                        if (match.getConfidence() > 0.8) {
+//                            if (backup == null) {
+//                                backup = match.getOc_code() + match.getOc_area();
+//                            }
+//
+//                            byte status = match.getOc_status();
+//                            if (isCompanyStatusNormal(status)) {
+//                                codeAreas.add(match.getOc_code() + match.getOc_area());
+//                            }
+//                        }
+//                    }
+//                    if (codeAreas.isEmpty() && backup != null) { //
+//                        codeAreas.add(backup);
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
             }
         }
         return codeAreas;

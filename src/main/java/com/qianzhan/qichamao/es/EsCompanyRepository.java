@@ -1,6 +1,5 @@
-package com.qianzhan.qichamao.dal.es;
+package com.qianzhan.qichamao.es;
 
-import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import org.elasticsearch.action.search.*;
 import org.elasticsearch.client.RequestOptions;
@@ -31,7 +30,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
+public class EsCompanyRepository extends EsBaseRepository<EsCompanyEntity> {
     private static EsCompanyRepository repository;
     public static EsCompanyRepository singleton() {
         if (repository == null) {
@@ -40,15 +39,13 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
         return repository;
     }
 
-    public EsCompanyRepository() {
-        super();
-    }
+    public EsCompanyRepository() { }
 
     /**
      * search api
      */
 
-    public SearchResponse search(EsCompanyInput input) throws IOException {
+    public SearchResponse search(EsSearchCompanyParam input) throws IOException {
         if (input.getAccessMode() == 2 && !MiscellanyUtil.isBlank(input.getScrollId())) {   // next scroll step
             SearchScrollRequest request = new SearchScrollRequest(input.getScrollId());
             request.scroll(TimeValue.timeValueSeconds(30));
@@ -171,7 +168,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
         return client.search(request.source(builder), RequestOptions.DEFAULT);
     }
 
-    private QueryBuilder query(EsCompanyInput input) {
+    private QueryBuilder query(EsSearchCompanyParam input) {
         QueryBuilder builder = QueryBuilders.boolQuery().filter(filter(input)).must(must(input));
         if ("_score".equals(input.getSortField())) {     // sort by score
             if (MiscellanyUtil.isArrayEmpty(input.getFields())) {   // tags influence
@@ -199,12 +196,12 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
         return builder;
     }
 
-    private QueryBuilder must(EsCompanyInput input) {
+    private QueryBuilder must(EsSearchCompanyParam input) {
         BoolQueryBuilder bool = QueryBuilders.boolQuery();
         if (input.getMulti_mode() > 0) {
             String field = input.getFields().iterator().next();
             if (input.getSep_type() == 2) {     // intersection
-                if (EsCompanyInput.getDef_simple_fields().contains(field)) {
+                if (EsSearchCompanyParam.getDef_simple_fields().contains(field)) {
                     for (String key : input.getKeywords().keySet()) {
                         int sign = input.getKeywords().get(key);
                         if (sign == 1)
@@ -236,7 +233,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
                 }
             } else {                            // union
                 for (String key : input.getKeywords().keySet()) {
-                    if (EsCompanyInput.getDef_simple_fields().contains(field)) {
+                    if (EsSearchCompanyParam.getDef_simple_fields().contains(field)) {
                         bool.should(QueryBuilders.termQuery(field, key));
                     } else {
                         if ("business".equals(field) || "oc_address".equals(field)) {
@@ -254,7 +251,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
         // single mode
         if (!MiscellanyUtil.isArrayEmpty(input.getFields())) {      // union
             for (String field : input.getFields()) {
-                if (EsCompanyInput.getDef_simple_fields().contains(field)) {
+                if (EsSearchCompanyParam.getDef_simple_fields().contains(field)) {
                     bool.should(QueryBuilders.termQuery(field, input.getKeyword()));
                 } else {
                     bool.should(QueryBuilders.matchPhraseQuery(field, input.getKeyword()))
@@ -268,7 +265,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
         }
         // generic
 
-        for (String field : EsCompanyInput.getDef_simple_fields()) {
+        for (String field : EsSearchCompanyParam.getDef_simple_fields()) {
             bool.should(QueryBuilders.termQuery(field, input.getKeyword()));
         }
         bool.should(QueryBuilders.termQuery("tags", input.getKeyword().toUpperCase()));
@@ -287,7 +284,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
         return bool;
     }
 
-    private QueryBuilder filter(EsCompanyInput input) {
+    private QueryBuilder filter(EsSearchCompanyParam input) {
         BoolQueryBuilder bool = QueryBuilders.boolQuery();
         if (input.getFilters() == null) return bool;
         for (String field : input.getFilters().keySet()) {
@@ -362,9 +359,9 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
      * @param inputs
      * @throws IOException
      */
-    public MultiSearchResponse multiSearch(EsCompanyInput[] inputs) throws IOException {
+    public MultiSearchResponse multiSearch(EsSearchCompanyParam[] inputs) throws IOException {
         MultiSearchRequest request = new MultiSearchRequest();
-        for (EsCompanyInput input : inputs) {
+        for (EsSearchCompanyParam input : inputs) {
             SearchRequest r = new SearchRequest(indexMeta.index());
             SearchSourceBuilder b = new SearchSourceBuilder();
             b.from(input.getFrom()).size(input.getSize());
@@ -403,7 +400,7 @@ public class EsCompanyRepository extends EsBaseRepository<EsCompany> {
      * @return
      * @throws Exception
      */
-    public SearchResponse multiSearch(EsCompanyInput input) throws Exception {
+    public SearchResponse multiSearch(EsSearchCompanyParam input) throws Exception {
         SearchRequest request = new SearchRequest();
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.size(input.getIds().length*3);

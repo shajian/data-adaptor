@@ -1,4 +1,4 @@
-package com.qianzhan.qichamao.dal.es;
+package com.qianzhan.qichamao.es;
 
 import com.qianzhan.qichamao.entity.EsComStat;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
@@ -39,7 +39,7 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
         super();
     }
 
-    public SearchResponse search(EsComStatInput input) throws IOException {
+    public SearchResponse search(EsSearchComStatParam input) throws IOException {
         if (input.getAccessMode() == 2 && !MiscellanyUtil.isBlank(input.getScrollId())) {   // next scroll step
             SearchScrollRequest request = new SearchScrollRequest(input.getScrollId());
             request.scroll(TimeValue.timeValueSeconds(30));
@@ -97,11 +97,11 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
         return client.search(request.source(builder), RequestOptions.DEFAULT);
     }
 
-    private QueryBuilder query(EsComStatInput input) {
+    private QueryBuilder query(EsSearchComStatParam input) {
         return QueryBuilders.boolQuery().filter(filter(input)).must(must(input));
     }
 
-    private QueryBuilder filter(EsComStatInput input) {
+    private QueryBuilder filter(EsSearchComStatParam input) {
         // filter: single-value-mode
         BoolQueryBuilder bool = QueryBuilders.boolQuery();
         for (String field : input.getFilters().keySet()) {
@@ -124,7 +124,7 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
         return bool;
     }
 
-    private QueryBuilder must(EsComStatInput input) {
+    private QueryBuilder must(EsSearchComStatParam input) {
         // only search for oc_name
         BoolQueryBuilder bool = QueryBuilders.boolQuery();
         bool.should(QueryBuilders.termQuery("oc_name.key", input.getKeyword()))
@@ -134,7 +134,7 @@ public class EsComStatRepository extends EsBaseRepository<EsComStat> {
         return bool;
     }
 
-    private List<AggregationBuilder> aggregate(EsComStatInput input) {
+    private List<AggregationBuilder> aggregate(EsSearchComStatParam input) {
         EsAggSetting aggs = input.getAggs();
         aggs.shrink(input.getFilters());
         List<AggregationBuilder> list = new ArrayList<>();

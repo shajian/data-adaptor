@@ -1,4 +1,4 @@
-package com.qianzhan.qichamao.dal.es;
+package com.qianzhan.qichamao.es;
 
 import org.elasticsearch.client.RestHighLevelClient;
 

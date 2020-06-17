@@ -2,10 +2,10 @@ package com.qianzhan.qichamao.controller;
 
 import com.qianzhan.qichamao.api.CompanyGraph;
 import com.qianzhan.qichamao.api.RedisCompanySearcher;
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.api.EsCompanySearcher;
-import com.qianzhan.qichamao.dal.es.EsCompanyInput;
-import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
+import com.qianzhan.qichamao.es.EsSearchCompanyParam;
+import com.qianzhan.qichamao.es.EsCompanyRepository;
 import com.qianzhan.qichamao.entity.EsCompanyTripleMatch;
 import com.qianzhan.qichamao.graph.GraphParam;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +16,7 @@ import java.util.List;
 @RequestMapping("/company")
 public class CompanyController {
     @PostMapping("/mget")
-    public List<EsCompany> mget(@RequestBody EsCompanyInput input) {
+    public List<EsCompanyEntity> mget(@RequestBody EsSearchCompanyParam input) {
         return EsCompanyRepository.singleton().mget(input);
     }
 
@@ -58,7 +58,7 @@ public class CompanyController {
     }
 
     @PostMapping("/search")
-    public void search(@RequestBody EsCompanyInput input) {
+    public void search(@RequestBody EsSearchCompanyParam input) {
 
     }
 

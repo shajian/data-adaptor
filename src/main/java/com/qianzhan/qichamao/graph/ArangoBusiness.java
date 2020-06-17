@@ -8,7 +8,7 @@ package com.qianzhan.qichamao.graph;
 @ArangoCollectionMeta(db = "company", collection = "cp", indices = {"name"})
 
 @ArangoGraphMeta(env = 2, db = "business", graph = "graph", edge = "relation", froms = {"company, person"}, tos = {"company"})
-@ArangoCollectionMeta(env = 2, db = "business", collection = "company")
-@ArangoCollectionMeta(env = 2, db = "business", collection = "person", indices = {"name"})
+@ArangoCollectionMeta(env = 2, db = "business", collection = "company", indices = ("degree"))
+@ArangoCollectionMeta(env = 2, db = "business", collection = "person", indices = {"name", "degree"})
 public class ArangoBusiness {
 }

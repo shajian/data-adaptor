@@ -1,8 +1,8 @@
 package com.qianzhan.qichamao.api;
 
 import com.qianzhan.qichamao.util.MiscellanyUtil;
-import com.qianzhan.qichamao.dal.es.EsCompanyInput;
-import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
+import com.qianzhan.qichamao.es.EsSearchCompanyParam;
+import com.qianzhan.qichamao.es.EsCompanyRepository;
 import com.qianzhan.qichamao.entity.EsCompanyTripleMatch;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -22,7 +22,7 @@ public class EsCompanySearcher {
      */
     public static List<EsCompanyTripleMatch> name2code(String name) throws Exception {
         EsCompanyRepository es = EsCompanyRepository.singleton();
-        EsCompanyInput input = new EsCompanyInput();
+        EsSearchCompanyParam input = new EsSearchCompanyParam();
         input.setKeyword(name);
         input.setSortField("establish_date");
         input.setFields("oc_name");
@@ -40,9 +40,9 @@ public class EsCompanySearcher {
     public static List<EsCompanyTripleMatch>[] name2code(String[] names) throws Exception {
         EsCompanyRepository es = EsCompanyRepository.singleton();
         List<EsCompanyTripleMatch>[] matches = new List[names.length];
-        EsCompanyInput[] inputs = new EsCompanyInput[names.length];
+        EsSearchCompanyParam[] inputs = new EsSearchCompanyParam[names.length];
         for (int i = 0; i < names.length; ++i) {
-            EsCompanyInput input = new EsCompanyInput();
+            EsSearchCompanyParam input = new EsSearchCompanyParam();
             input.setKeyword(names[i]);
             input.setFields("oc_name");
             input.setSize(5);           // get top 5 documents
@@ -60,7 +60,7 @@ public class EsCompanySearcher {
     }
 
     public static String[] fname2code(String[] names) throws Exception {
-        EsCompanyInput input = new EsCompanyInput();
+        EsSearchCompanyParam input = new EsSearchCompanyParam();
         input.setField("oc_name.key");
         input.setIds(names);
         input.setSrc_inc("oc_name", "oc_code", "oc_area");

@@ -1,4 +1,4 @@
-package com.qianzhan.qichamao.dal.es;
+package com.qianzhan.qichamao.es;
 
 import com.qianzhan.qichamao.util.EsConfigBus;
 import lombok.Getter;

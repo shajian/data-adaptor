@@ -1,6 +1,6 @@
 package com.qianzhan.qichamao.controller;
 
-import com.qianzhan.qichamao.dal.es.EsCompanyInput;
+import com.qianzhan.qichamao.es.EsSearchCompanyParam;
 import com.qianzhan.qichamao.entity.MongoComDtl;
 import com.qianzhan.qichamao.entity.RetrieveRange;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +29,7 @@ public class HelloController {
     }
 
     @PostMapping("/company-search")
-    public void company_search(@RequestBody EsCompanyInput input) {
+    public void company_search(@RequestBody EsSearchCompanyParam input) {
 
     }
 }

@@ -1,9 +1,9 @@
 package com.qianzhan.qichamao.entity;
 
-import com.qianzhan.qichamao.dal.es.EsAnalyzer;
-import com.qianzhan.qichamao.dal.es.EsFieldMeta;
-import com.qianzhan.qichamao.dal.es.EsFieldType;
-import com.qianzhan.qichamao.dal.es.EsIndexMeta;
+import com.qianzhan.qichamao.es.EsAnalyzer;
+import com.qianzhan.qichamao.es.EsFieldMeta;
+import com.qianzhan.qichamao.es.EsFieldType;
+import com.qianzhan.qichamao.es.EsIndexMeta;
 import lombok.Getter;
 import lombok.Setter;
 

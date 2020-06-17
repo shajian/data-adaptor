@@ -1,10 +1,10 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.entity.OrgCompanyList;
 import com.qianzhan.qichamao.task.stat.BrowseCount;
 import com.qianzhan.qichamao.task.stat.CompanyStatisticsInfo;
-import com.qianzhan.qichamao.dal.es.EsCompanyRepository;
+import com.qianzhan.qichamao.es.EsCompanyRepository;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,7 +122,7 @@ public class EsCompanyWriter extends BaseWriter {
 
         System.out.println("writing into ES...");
 
-        List<EsCompany> e_coms = new ArrayList<>();
+        List<EsCompanyEntity> e_coms = new ArrayList<>();
         for (ComPack cp : SharedData.getBatch(tasks_key)) {
             e_coms.add(cp.es);
         }

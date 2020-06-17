@@ -1,4 +1,4 @@
-package com.qianzhan.qichamao.dal.es;
+package com.qianzhan.qichamao.es;
 
 import com.qianzhan.qichamao.util.BeanUtil;
 import lombok.Getter;
@@ -350,7 +350,7 @@ public abstract class EsBaseRepository<T> {
         return false;
     }
 
-    public T get(EsBaseInput<T> input) {
+    public T get(EsSearchBaseParam<T> input) {
         Asserts.notNull(input.getId(), "must set id for EsQueryInput when call `get` in EsBaseRepository");
         GetRequest request = new GetRequest(indexMeta.index(), indexMeta.type(), input.getId());
         Asserts.check(input.isSrc_flag(), "must turn `src_flag` for class `EsQueryInput` in action 'get'");
@@ -373,7 +373,7 @@ public abstract class EsBaseRepository<T> {
         return null;
     }
 
-    public List<T> mget(EsBaseInput<T> input) {
+    public List<T> mget(EsSearchBaseParam<T> input) {
         Asserts.notNull(input.getIds(), "must set ids for EsQueryInput when call `get` in EsBaseRepository");
         MultiGetRequest request = new MultiGetRequest();
         Asserts.check(input.isSrc_flag(), "must turn `src_flag` for class `EsQueryInput` in action 'get'");
@@ -389,6 +389,7 @@ public abstract class EsBaseRepository<T> {
         String type = indexMeta.type();
         for (String id : input.getIds()) {;
             MultiGetRequest.Item item = new MultiGetRequest.Item(index, type, id);
+            //
             if (ctx != null)
                 item.fetchSourceContext(ctx);
             request.add(item);
@@ -405,6 +406,7 @@ public abstract class EsBaseRepository<T> {
             }
         } catch (IOException e) {
             // log exception
+            e.printStackTrace();
         }
         return list;
     }

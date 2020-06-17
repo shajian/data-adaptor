@@ -1,16 +1,15 @@
 package com.qianzhan.qichamao.task.com;
 
 import com.qianzhan.qichamao.config.GlobalConfig;
+import com.qianzhan.qichamao.dal.RedisClient;
+import com.qianzhan.qichamao.dal.arangodb.ArangoComClient;
+import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.entity.ArangoCpPack;
 import com.qianzhan.qichamao.entity.ArangoCpVD;
 import com.qianzhan.qichamao.entity.OrgCompanyList;
 import com.qianzhan.qichamao.entity.RedisCompanyIndex;
 import com.qianzhan.qichamao.graph.ArangoBusinessCompany;
 import com.qianzhan.qichamao.graph.ArangoBusinessPack;
-import com.qianzhan.qichamao.util.DbConfigBus;
-import com.qianzhan.qichamao.dal.RedisClient;
-import com.qianzhan.qichamao.dal.arangodb.ArangoComClient;
-import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 
 import java.util.*;
@@ -73,8 +72,6 @@ public class RedisCompanyIndexWriter extends BaseWriter {
 
 
     protected boolean state1_inner() throws Exception {
-        if (checkpoint >= 109098118) return false;
-
         List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;
 
@@ -232,23 +229,8 @@ public class RedisCompanyIndexWriter extends BaseWriter {
     }
 
 
-    /**
-     *
-     * @param name
-     * @param code oc_code + oc_area
-     */
-    public void setNamecode(String name, String code) {
-        if (RedisClient.exists("s:"+name)) {
-            RedisClient.sadd("s:"+name, code);
-        } else {
-            String old = RedisClient.get(name);
-            if (old != null) {
-                RedisClient.del(name);
-                RedisClient.sadd("s:"+name, old, code);
-            } else {
-                RedisClient.set(name, code);
-            }
-        }
+    protected boolean state2_inner() throws Exception {
+        return false;
     }
 
     //============= provides some intrusive interface =============

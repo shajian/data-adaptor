@@ -1,5 +1,6 @@
 package com.qianzhan.qichamao.entity;
 
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,7 +26,7 @@ public class MongoComDtl {
         this.oc_area = c.oc_area;
     }
 
-    public void loadFrom(EsCompany c) {
+    public void loadFrom(EsCompanyEntity c) {
         this._id = c.getOc_code();
 //        this.oc_code = c.getOc_code();
         this.oc_name = c.getOc_name();

@@ -1,4 +1,4 @@
-package com.qianzhan.qichamao.dal.es;
+package com.qianzhan.qichamao.es;
 
 import com.qianzhan.qichamao.entity.EsComStat;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
@@ -8,8 +8,8 @@ import lombok.Setter;
 import java.util.HashMap;
 import java.util.Map;
 @Getter@Setter
-public class EsComStatInput extends EsBaseInput<EsComStat> {
-    public EsComStatInput() {
+public class EsSearchComStatParam extends EsSearchBaseParam<EsComStat> {
+    public EsSearchComStatParam() {
         super();
     }
 

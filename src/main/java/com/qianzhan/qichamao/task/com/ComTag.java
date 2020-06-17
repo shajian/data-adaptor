@@ -1,7 +1,7 @@
 package com.qianzhan.qichamao.task.com;
 
 import com.qianzhan.qichamao.collection.TopNCollection;
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.entity.OrgCompanyTag;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
@@ -16,7 +16,7 @@ public class ComTag extends ComBase {
     @Override
     public void run() {
         if (compack.es != null) {
-            EsCompany c = compack.es;
+            EsCompanyEntity c = compack.es;
             List<OrgCompanyTag> tags = MybatisClient.getCompanyTags(c.getOc_code());
             List<String> unweighted_tags = new ArrayList<>();
             TopNCollection<OrgCompanyTag> coll = new TopNCollection(3, OrgCompanyTag.comparator);

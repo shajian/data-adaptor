@@ -1,4 +1,4 @@
-package com.qianzhan.qichamao.dal.es;
+package com.qianzhan.qichamao.es;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -7,7 +7,7 @@ import org.elasticsearch.search.sort.SortOrder;
 
 
 @ToString
-public class EsBaseInput<T> {
+public class EsSearchBaseParam<T> {
 //    @Getter@Setter
 //    private String index; // this value is provided by EsBaseRepository
 

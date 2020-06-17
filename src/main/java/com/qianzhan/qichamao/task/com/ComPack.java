@@ -1,6 +1,6 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.entity.RedisCompanyIndex;
 import com.qianzhan.qichamao.graph.ArangoBusinessPack;
 import com.qianzhan.qichamao.entity.MongoComDtl;
@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ComPack {
-    public EsCompany es;
+    public EsCompanyEntity es;
     public MongoComDtl mongo;
     public RedisCompanyIndex redis;
     public ArangoBusinessPack arango;
@@ -27,7 +27,7 @@ public class ComPack {
     public ComPack(int[] tasks) throws Exception {
         for (int tt : tasks) {
             if ((tt & TaskType.es.getValue()) != 0) {
-                es = new EsCompany();
+                es = new EsCompanyEntity();
             }
             if ((tt & TaskType.mongo.getValue()) != 0) {
                 mongo = new MongoComDtl();

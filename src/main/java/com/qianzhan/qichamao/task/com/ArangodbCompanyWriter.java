@@ -103,7 +103,8 @@ public class ArangodbCompanyWriter extends BaseWriter {
 
 
 
-    protected void state3_pre() {
+    protected void state3_pre() throws Exception {
+        ArangoBusinessRepository.singleton().createGraph();
         preHooks = new ArrayList<>();
         postHooks = new ArrayList<>();
         preHooks.add(() -> SharedData.openBatch(tasks_key));
@@ -141,7 +142,7 @@ public class ArangodbCompanyWriter extends BaseWriter {
             ArangoBusinessPack a_com = cp.arango;
             a_com.oc_code = company.oc_code;
             a_com.oc_area = company.oc_area;
-//            arango.com = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
+            a_com.com = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area).to();
 
             //
             pool.execute(new ComDtl(tasks_key));
@@ -161,7 +162,7 @@ public class ArangodbCompanyWriter extends BaseWriter {
         System.out.println("writing lp, sh, sm into arango..." + new Date().toString());
 
         insert();
-        Thread.sleep(10);
+//        Thread.sleep(10);
         return true;
     }
 

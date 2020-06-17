@@ -1,6 +1,5 @@
-package com.qianzhan.qichamao.dal.es;
+package com.qianzhan.qichamao.es;
 
-import com.qianzhan.qichamao.entity.EsCompany;
 import com.qianzhan.qichamao.util.EsConfigBus;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import lombok.Getter;
@@ -12,7 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
-public class EsCompanyInput extends EsBaseInput<EsCompany> {
+public class EsSearchCompanyParam extends EsSearchBaseParam<EsCompanyEntity> {
     /**
      * searching version
      * this field has a format of 'xxxx-xx-xx', means year-month-day
@@ -21,7 +20,7 @@ public class EsCompanyInput extends EsBaseInput<EsCompany> {
     private String version;
 
 
-    public EsCompanyInput() {
+    public EsSearchCompanyParam() {
         super();
     }
 
@@ -121,7 +120,7 @@ public class EsCompanyInput extends EsBaseInput<EsCompany> {
             if (str.contains(".txt")) { // read shield txt file
                 try {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(
-                            new FileInputStream(EsCompanyInput.class.getClassLoader().
+                            new FileInputStream(EsSearchCompanyParam.class.getClassLoader().
                                     getResource("EsConfig.yaml").getPath())
                     ));
                     String line;

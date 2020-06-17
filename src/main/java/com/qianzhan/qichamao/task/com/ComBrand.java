@@ -1,6 +1,6 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
@@ -24,7 +24,7 @@ public class ComBrand extends ComBase {
         }
 
         if (compack.es != null) {
-            EsCompany c = compack.es;
+            EsCompanyEntity c = compack.es;
             List<String> brands = new ArrayList<>();
             for (String name : MybatisClient.getCompanyBrands(c.getOc_code(), tail)) {
                 if (MiscellanyUtil.isBlank(name)) continue;

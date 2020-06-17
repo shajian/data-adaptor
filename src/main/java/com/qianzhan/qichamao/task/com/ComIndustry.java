@@ -1,6 +1,6 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.entity.OrgCompanyIndustry;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
@@ -13,7 +13,7 @@ public class ComIndustry extends ComBase {
     @Override
     public void run() {
         if (compack.es != null) {
-            EsCompany c = compack.es;
+            EsCompanyEntity c = compack.es;
             String code = c.getOc_code();
             try {
                 List<OrgCompanyIndustry> industries = MybatisClient.getCompanyIndustries(

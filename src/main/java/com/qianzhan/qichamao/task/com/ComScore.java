@@ -1,6 +1,6 @@
 package com.qianzhan.qichamao.task.com;
 
-import com.qianzhan.qichamao.entity.EsCompany;
+import com.qianzhan.qichamao.es.EsCompanyEntity;
 import com.qianzhan.qichamao.entity.OrgCompanyStatisticsInfo;
 import com.qianzhan.qichamao.task.stat.BrowseCount;
 import com.qianzhan.qichamao.task.stat.CompanyStatisticsInfo;
@@ -19,7 +19,7 @@ public class ComScore extends ComBase {
     @Override
     public void run() {
         if (compack.es != null) {
-            EsCompany c = compack.es;
+            EsCompanyEntity c = compack.es;
             OrgCompanyStatisticsInfo info = MybatisClient.getCompanyStatisticsInfo(c.getOc_code());
             int count = MybatisClient.getBrowseCount(c.getOc_code());
             int score = 0;
@@ -71,7 +71,7 @@ public class ComScore extends ComBase {
      * In query phase, sorting score = inner score * weight + score
      */
 
-    public static int getScoreByName(EsCompany c) {
+    public static int getScoreByName(EsCompanyEntity c) {
         String name = c.getOc_name();
         if (MiscellanyUtil.isBlank(name)) return -1000;
         if (name.endsWith("大学")) return 0;
@@ -87,13 +87,13 @@ public class ComScore extends ComBase {
         return score;
     }
 
-    public static int getScoreByStatus(EsCompany c) {
+    public static int getScoreByStatus(EsCompanyEntity c) {
         int status = c.getOc_status();
         if (status <= 3 && status >= 1 || status == 10) return 2;
         return -3;
     }
 
-    public static int getScoreByArea(EsCompany c) {
+    public static int getScoreByArea(EsCompanyEntity c) {
         String area = c.getOc_area();
         if (!MiscellanyUtil.isBlank(area)) {
             if (area.startsWith("11") || area.startsWith("12") || area.startsWith("31") || area.startsWith("3201")
@@ -104,14 +104,14 @@ public class ComScore extends ComBase {
         return 0;
     }
 
-    public static int getScoreByType(EsCompany c) {
+    public static int getScoreByType(EsCompanyEntity c) {
         String type = c.getOc_types().get(0);
         if ("其他".equals(type)) return -2;
         if ("个体工商户".equals(type)) return 0;
         return 2;
     }
 
-    public static int getScoreByContact(EsCompany c) {
+    public static int getScoreByContact(EsCompanyEntity c) {
         int score = 0;
         if (!MiscellanyUtil.isArrayEmpty(c.getFix_phones())) {
             score += 4;
