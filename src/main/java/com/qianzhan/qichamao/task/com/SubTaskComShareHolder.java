@@ -12,8 +12,8 @@ import com.qianzhan.qichamao.util.NLP;
 
 import java.util.*;
 
-public class ComShareHolder extends ComBase {
-    public ComShareHolder(String key) {
+public class SubTaskComShareHolder extends SubTaskComBase {
+    public SubTaskComShareHolder(TaskType key) {
         super(key);
     }
     @Override

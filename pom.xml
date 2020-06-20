@@ -43,6 +43,9 @@
                             <addClasspath>true</addClasspath>
                             <mainClass>${project.mainClass}</mainClass>
                         </manifest>
+                        <manifestEntries>
+                            <Class-Path>hanlp-1.7.6.jar sqljdbc42.jar</Class-Path>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
@@ -90,17 +93,17 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
-            <version>7.6.0</version>
+            <version>7.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-client</artifactId>
-            <version>7.6.0</version>
+            <version>7.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>7.6.0</version>
+            <version>7.7.1</version>
         </dependency>
 
         <dependency>

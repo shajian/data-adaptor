@@ -7,10 +7,10 @@ import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ComBrand extends ComBase {
+public class SubTaskComBrand extends SubTaskComBase {
 
     private boolean tbl_tail;
-    public ComBrand(String key) {
+    public SubTaskComBrand(TaskType key) {
         super(key);
     }
 
@@ -18,7 +18,7 @@ public class ComBrand extends ComBase {
     public void run() {
         String tail = "";
         try {
-            tail = SharedData.getConfig(tasks_key).getBool("local") ? "_temp" : "";
+            tail = SharedData.getConfig(task).getBool("local") ? "_temp" : "";
         } catch (Exception e) {
 
         }

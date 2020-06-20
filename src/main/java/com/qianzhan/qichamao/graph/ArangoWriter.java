@@ -65,7 +65,10 @@ public class ArangoWriter {
                 relations.put(doc.getKey(), doc);
             }
         }
-
+//        System.out.println(String.format("company: %s, person: %s",
+//                ArangoBusinessCompany.collection, ArangoBusinessPerson.collection));
+//        System.out.println(String.format("companies: %d, persons: %s",
+//                companies.size(), persons.size()));
         business.insert(ArangoBusinessCompany.collection, companies.values());
         business.insert(ArangoBusinessPerson.collection, persons.values());
         business.insert_e(relations.values());

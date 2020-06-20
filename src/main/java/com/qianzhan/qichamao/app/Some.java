@@ -1,10 +1,12 @@
 package com.qianzhan.qichamao.app;
 
-import com.qianzhan.qichamao.task.com.ArangodbCompanyWriter;
-import com.qianzhan.qichamao.task.com.EsCompanyWriter;
-import com.qianzhan.qichamao.task.com.MongodbCompanyWriter;
-import com.qianzhan.qichamao.task.com.RedisCompanyIndexWriter;
+import com.qianzhan.qichamao.task.com.*;
+import com.qianzhan.qichamao.task.com.MainTaskEsCompany;
+import com.qianzhan.qichamao.task.com.MainTaskMongodbCompany;
 import com.qianzhan.qichamao.task.stat.BrowseCount;
+import com.qianzhan.qichamao.util.DbConfigBus;
+
+import java.io.File;
 
 public class Some {
     public static void main(String[] args) {
@@ -20,17 +22,17 @@ public class Some {
                 BrowseCount.start();
             } else if (taskNo == 2) {
                 System.out.println("writing data into elasticsearch + mongodb...");
-                EsCompanyWriter writer = new EsCompanyWriter();
+                MainTaskEsCompany writer = new MainTaskEsCompany();
                 writer.start();
             } else if (taskNo == 3) {
-                RedisCompanyIndexWriter writer = new RedisCompanyIndexWriter();
+                MainTaskRedisCompanyIndex writer = new MainTaskRedisCompanyIndex();
                 writer.start();
             } else if (taskNo == 4) {
-                ArangodbCompanyWriter writer = new ArangodbCompanyWriter();
+                MainTaskArangodbCompany writer = new MainTaskArangodbCompany();
                 ShutdownHook.register(() -> writer.exitSafely());
                 writer.start();
             } else if (taskNo == 5) {
-                MongodbCompanyWriter writer = new MongodbCompanyWriter();
+                MainTaskMongodbCompany writer = new MainTaskMongodbCompany();
                 writer.start();
             }
             System.out.println("game f**king over");

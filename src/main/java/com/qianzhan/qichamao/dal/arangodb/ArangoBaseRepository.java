@@ -110,7 +110,14 @@ public abstract class ArangoBaseRepository<T> {
             EdgeDefinition definition = new EdgeDefinition().collection(graphMeta.edge())
                     .from(graphMeta.froms()).to(graphMeta.tos());
             definitions.add(definition);
-            db.createGraph(graphMeta.graph(), definitions);
+            try {
+                db.createGraph(graphMeta.graph(), definitions);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println(String.format("%s=%s -(%s)-> %s", graphMeta.graph(),
+                    String.join(",",graphMeta.froms()), graphMeta.edge(),
+                        String.join(",", graphMeta.tos())));
+            }
         }
 
         for (ArangoCollectionMeta meta : collectionMetas) {
@@ -123,7 +130,7 @@ public abstract class ArangoBaseRepository<T> {
                     indexFields.addAll(entity.getFields());
                 }
                 for (String index : meta.indices()) {
-                    String[] segs = index.split(".");
+                    String[] segs = index.split("\\.");
                     if (indexFields.contains(segs[0])) continue;    // had been indexed
                     boolean u = false, s = false;
                     for (int i = 1; i < segs.length; ++i) {

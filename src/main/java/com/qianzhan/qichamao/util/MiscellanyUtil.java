@@ -2,6 +2,7 @@ package com.qianzhan.qichamao.util;
 
 import org.apache.http.util.Asserts;
 
+import java.io.File;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.List;
@@ -133,5 +134,16 @@ public class MiscellanyUtil {
 
     public static int bytes2int(byte[] bytes, int start) {
         return (bytes[start]&0xFF)|((bytes[start+1]&0xFF)<<8)|((bytes[start+2]&0xFF)<<16)|((bytes[start+3] & 0xFF)<<24);
+    }
+
+
+    private static String _jarDir = null;
+    public static String jarDir() {
+        if (_jarDir == null) {
+            String dir = DbConfigBus.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+            dir = new File(dir).getParentFile().getAbsolutePath();
+            _jarDir = dir;
+        }
+        return _jarDir;
     }
 }

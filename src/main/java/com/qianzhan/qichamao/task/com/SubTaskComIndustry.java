@@ -6,8 +6,8 @@ import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
 import java.util.*;
 
-public class ComIndustry extends ComBase {
-    public ComIndustry(String key) {
+public class SubTaskComIndustry extends SubTaskComBase {
+    public SubTaskComIndustry(TaskType key) {
         super(key);
     }
     @Override

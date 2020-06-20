@@ -7,8 +7,8 @@ import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ComOldName extends ComBase {
-    public ComOldName(String key) {
+public class SubTaskComOldName extends SubTaskComBase {
+    public SubTaskComOldName(TaskType key) {
         super(key);
     }
     @Override

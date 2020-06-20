@@ -22,7 +22,6 @@ public class RedisClient {
             JedisPoolConfig config = new JedisPoolConfig();
             config.setMaxTotal(1000);
             config.setMaxIdle(100);
-
             if (pwd != null && !pwd.equals(""))
                 pool = new JedisPool(config, host, port, 10000, pwd);
             else

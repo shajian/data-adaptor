@@ -9,8 +9,8 @@ import com.qianzhan.qichamao.entity.MongoComContact;
 
 import java.util.*;
 
-public class ComContact extends ComBase {
-    public ComContact(String key) {
+public class SubTaskComContact extends SubTaskComBase {
+    public SubTaskComContact(TaskType key) {
         super(key);
     }
 

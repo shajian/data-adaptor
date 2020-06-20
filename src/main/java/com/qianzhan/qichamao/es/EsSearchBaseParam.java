@@ -1,5 +1,6 @@
 package com.qianzhan.qichamao.es;
 
+import com.qianzhan.qichamao.es.EsAggSetting;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -52,7 +53,7 @@ public class EsSearchBaseParam<T> {
     @Getter@Setter
     private int from;   // starts from 0
     @Getter@Setter
-    private int size;
+    private int size = 10;
 
     @Getter@Setter
     private EsAggSetting aggs/* = EsAggSetting.getDefault("company.aggs")*/;

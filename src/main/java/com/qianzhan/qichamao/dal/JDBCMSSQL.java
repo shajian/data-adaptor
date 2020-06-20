@@ -10,7 +10,7 @@ public class JDBCMSSQL {
 
     static {
         try {
-            Class.forName(DbConfigBus.getDbConfig_s("MSSQL_DRIVER", "com.microsoft.sqlserver.jdbc.SQLServerDriver"));
+            Class.forName(DbConfigBus.getDbConfig_s("MSSQL_DRIVER", "com.microsoft.sqlserver.jdbc."));
             conn = DriverManager.getConnection(
                     DbConfigBus.getDbConfig_s("MSSQL_COM_URL", null),
                     DbConfigBus.getDbConfig_s("MSSQL_COM_USER", null),

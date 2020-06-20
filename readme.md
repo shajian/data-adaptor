@@ -40,6 +40,8 @@ build the jar file
 ```
 mvn clean package
 ```
+(If want to skip unit test, add option `-Dmaven.skip.test=true` or `-DskipTests=true`)
+
 This command may generate two jar files `data-adapter-x.x.jar` 
 and `data-adapter-x.x.jar.original`. The latter is original jar
 file and the former is additionally use `com.qianzhan.qichamao.app.Application`

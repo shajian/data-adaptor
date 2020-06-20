@@ -18,15 +18,15 @@ import java.util.List;
  * 2. BrowseCount histogram
  *
  */
-public class EsCompanyWriter extends BaseWriter {
+public class MainTaskEsCompany extends MainTaskBase {
     private EsCompanyRepository repository;
 
-    private static final Logger logger = LoggerFactory.getLogger(EsCompanyWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(MainTaskEsCompany.class);
 
 
 
-    public EsCompanyWriter() throws Exception {
-        super("config/EsCompany.txt");
+    public MainTaskEsCompany() throws Exception {
+        super("config/Task_Es_Company.txt");
         // initialize ES read/write components
         repository = new EsCompanyRepository();
         checkpointName = "data-adaptor.es."+repository.getIndexMeta().index();
@@ -52,25 +52,17 @@ public class EsCompanyWriter extends BaseWriter {
 
         // register hook functions
         preHooks = new ArrayList<>();
-        preHooks.add(() -> SharedData.openBatch(tasks_key));
+        preHooks.add(() -> SharedData.openBatch(task));
 
         postHooks = new ArrayList<>();
-        for (int task : tasks) {
-            if ((task & TaskType.mongo.getValue()) != 0) {
-                postHooks.add(() -> MongodbCompanyWriter.writeDtl2Db(tasks_key));
-            }
-            if ((task & TaskType.arango.getValue()) != 0) {
-                postHooks.add(() -> ArangodbCompanyWriter.insert_static(tasks_key));
-            }
-        }
-        postHooks.add(() -> SharedData.closeBatch(tasks_key));
+        postHooks.add(() -> SharedData.closeBatch(task));
     }
 
     protected boolean state1_inner() throws Exception{
         List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;    // task finishes !!!
 
-        ComBase.resetLatch(tasks_key, batch*9);
+        SubTaskComBase.resetLatch(task, batch*9);
         int count = 0;
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
@@ -84,46 +76,46 @@ public class EsCompanyWriter extends BaseWriter {
             if (filter_out(company.oc_name)) continue;
 
 
-            SharedData.open(tasks_key);
-            ComPack cp = SharedData.get(tasks_key);
+            SharedData.open(task);
+            ComPack cp = SharedData.get(task);
             cp.es.loadFrom(company);
             if (cp.mongo != null) {
                 cp.mongo.loadFrom(company);
             }
 
-            pool.execute(new ComDtl(tasks_key));
-            pool.execute(new ComMember(tasks_key));
-            pool.execute(new ComShareHolder(tasks_key));
+            pool.execute(new SubTaskComDtl(task));
+            pool.execute(new SubTaskComMember(task));
+            pool.execute(new SubTaskComShareHolder(task));
 
-            pool.execute(new ComContact(tasks_key));
-            pool.execute(new ComOldName(tasks_key));
-            pool.execute(new ComIndustry(tasks_key));
+            pool.execute(new SubTaskComContact(task));
+            pool.execute(new SubTaskComOldName(task));
+            pool.execute(new SubTaskComIndustry(task));
 
-            pool.execute(new ComGeo(tasks_key));
-            pool.execute(new ComBrand(tasks_key));
-            pool.execute(new ComTag(tasks_key));
+            pool.execute(new SubTaskComGeo(task));
+            pool.execute(new SubTaskComBrand(task));
+            pool.execute(new SubTaskComTag(task));
 
-            SharedData.close(tasks_key);
+            SharedData.close(task);
             count += 1;
         }
 
         int diff = (batch-count)*9;
-        while(ComBase.getLatch(tasks_key).getCount() != diff) {
+        while(SubTaskComBase.getLatch(task).getCount() != diff) {
             Thread.sleep(100);
         }
 
-        ComBase.resetLatch(tasks_key, count);
+        SubTaskComBase.resetLatch(task, count);
         // set weight and score
-        for (ComPack cp : SharedData.getBatch(tasks_key)) {
-            pool.execute(new ComScore(cp));
+        for (ComPack cp : SharedData.getBatch(task)) {
+            pool.execute(new SubTaskComScore(cp));
         }
 
-        ComBase.getLatch(tasks_key).await();
+        SubTaskComBase.getLatch(task).await();
 
         System.out.println("writing into ES...");
 
         List<EsCompanyEntity> e_coms = new ArrayList<>();
-        for (ComPack cp : SharedData.getBatch(tasks_key)) {
+        for (ComPack cp : SharedData.getBatch(task)) {
             e_coms.add(cp.es);
         }
         repository.index(e_coms);

@@ -9,48 +9,48 @@ import java.util.Map;
 
 public class SharedData {
     // this cache is instantaneous
-    // key: tasks_key, value: ComPack
-    private static Map<String, ComPack> packs = new HashMap<>();
+    // key: task, value: ComPack
+    private static Map<TaskType, ComPack> packs = new HashMap<>();
     // each item of this cache has an iterated lifetime
-    private static Map<String, List<ComPack>> packss = new HashMap<>();
+    private static Map<TaskType, List<ComPack>> packss = new HashMap<>();
 
     // this cache has a app-process lifetime
-    private static Map<String, BaseConfigBus> configs = new HashMap<>();
+    private static Map<TaskType, BaseConfigBus> configs = new HashMap<>();
 
-    public static void registerConfig(String key, BaseConfigBus config) {
+    public static void registerConfig(TaskType key, BaseConfigBus config) {
         configs.put(key, config);
     }
 
 
     // ============ synchronization depends on user ==============
-    public static void openBatch(String key) {
+    public static void openBatch(TaskType key) {
         if (!packss.containsKey(key)) {
             packss.put(key, new ArrayList<>());
         }
     }
 
-    public static void closeBatch(String key) {
+    public static void closeBatch(TaskType key) {
         packss.get(key).clear();
     }
 
-    public static void open(String key) throws Exception {
+    public static void open(TaskType key) throws Exception {
         ComPack cp = new ComPack(key);
         packs.put(key, cp);
         packss.get(key).add(cp);
     }
 
-    public static void close(String key) {
+    public static void close(TaskType key) {
         packs.put(key, null);
     }
 
-    public static ComPack get(String key) {
+    public static ComPack get(TaskType key) {
         return packs.get(key);
     }
 
-    public static List<ComPack> getBatch(String key) {
+    public static List<ComPack> getBatch(TaskType key) {
         return packss.get(key);
     }
-    public static BaseConfigBus getConfig(String key) {
+    public static BaseConfigBus getConfig(TaskType key) {
         return configs.get(key);
     }
 }

@@ -7,12 +7,12 @@ import com.qianzhan.qichamao.task.stat.CompanyStatisticsInfo;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 
-public class ComScore extends ComBase {
-    public ComScore(String key) {
+public class SubTaskComScore extends SubTaskComBase {
+    public SubTaskComScore(TaskType key) {
         super(key);
     }
 
-    public ComScore(ComPack cp) {
+    public SubTaskComScore(ComPack cp) {
         super(cp);
     }
 

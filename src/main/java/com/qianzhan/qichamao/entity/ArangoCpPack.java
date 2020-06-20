@@ -4,7 +4,7 @@ import java.util.*;
 
 /**
  * the same thread-method (with different input params such as `oc_code`) always operate different ArangoCpPack
- * different thread-method (such as ComMember and ComShareHolder) may operator the same ArangoCpPack but
+ * different thread-method (such as SubTaskComMember and SubTaskComShareHolder) may operator the same ArangoCpPack but
  *  the different field (such as `share_holders` and `senior_members`)
  * In a word, no synchronization is needed.
  */

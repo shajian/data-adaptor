@@ -9,8 +9,8 @@ import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ComTag extends ComBase {
-    public ComTag(String key) {
+public class SubTaskComTag extends SubTaskComBase {
+    public SubTaskComTag(TaskType key) {
         super(key);
     }
     @Override

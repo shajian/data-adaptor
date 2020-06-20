@@ -8,29 +8,29 @@ import com.qianzhan.qichamao.entity.ArangoCpPack;
 import com.qianzhan.qichamao.entity.ArangoCpVD;
 import com.qianzhan.qichamao.entity.OrgCompanyList;
 import com.qianzhan.qichamao.entity.RedisCompanyIndex;
+import com.qianzhan.qichamao.es.EsUpdateLogEntity;
+import com.qianzhan.qichamao.es.EsUpdateLogRepository;
+import com.qianzhan.qichamao.es.search.EsUpdateLogSearcher;
 import com.qianzhan.qichamao.graph.ArangoBusinessCompany;
 import com.qianzhan.qichamao.graph.ArangoBusinessPack;
 import com.qianzhan.qichamao.util.MiscellanyUtil;
 
 import java.util.*;
 
-public class RedisCompanyIndexWriter extends BaseWriter {
+public class MainTaskRedisCompanyIndex extends MainTaskBase {
     // trace all set-type keys for high efficiency.
     // each of these keys is a company name shared by many oc_codes which are also value of the key
     private Set<String> allSetKeys;
     private String allSetKeysKey = "setkeys";
 
-    public RedisCompanyIndexWriter() throws Exception {
-        super("config/RedisCompanyIndex.txt");
+    public MainTaskRedisCompanyIndex() throws Exception {
+        super("config/Task_Redis_CompanyIndex.txt");
         checkpointName = "data-adaptor.redis.company";
 
         init();
     }
 
     private void init() {
-//        nDbIndex = DbConfigBus.getDbConfig_i("redis.db.negative", 2);
-
-
         allSetKeys = RedisClient.sscan(allSetKeysKey);
     }
 
@@ -39,15 +39,9 @@ public class RedisCompanyIndexWriter extends BaseWriter {
         // register hook
         preHooks = new ArrayList<>();
         postHooks = new ArrayList<>();
-        preHooks.add(() -> SharedData.openBatch(tasks_key));
+        preHooks.add(() -> SharedData.openBatch(task));
 
-        for (int task : tasks) {
-            if ((task & TaskType.arango.getValue()) != 0) {
-                preHooks.add(()-> ArangoComClient.getSingleton().initGraph());
-                postHooks.add(()->ArangodbCompanyWriter.insert_static(tasks_key));
-            }
-        }
-        postHooks.add(() -> SharedData.closeBatch(tasks_key));
+        postHooks.add(() -> SharedData.closeBatch(task));
     }
 
     // =========================
@@ -76,7 +70,7 @@ public class RedisCompanyIndexWriter extends BaseWriter {
         if (companies.size() == 0) return false;
 
 //        int count = 0;
-//        ComBase.resetLatch(tasks_key, batch);
+//        SubTaskComBase.resetLatch(task, batch);
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
 
@@ -89,8 +83,8 @@ public class RedisCompanyIndexWriter extends BaseWriter {
             if (MiscellanyUtil.isBlank(company.oc_name)) continue;
 //            if (filter_out(company.oc_name)) continue;
 
-            SharedData.open(tasks_key);
-            ComPack cp = SharedData.get(tasks_key);
+            SharedData.open(task);
+            ComPack cp = SharedData.get(task);
             cp.redis = new RedisCompanyIndex();
             cp.redis.setCode(company.oc_code);
             cp.redis.setName(company.oc_name);
@@ -98,30 +92,17 @@ public class RedisCompanyIndexWriter extends BaseWriter {
 
 //            // for the sake of some unknown error, companies sharing a same name are not all valid,
 //            //  (e.g. company status is abnormal), we will try to keep the valid in priority.
-//            pool.execute(new ComDtl(tasks_key));        // to get validity
+//            pool.execute(new SubTaskComDtl(task));        // to get validity
 //            count++;
 
-            // check if arango task is turned on
-            ArangoBusinessPack arango = cp.arango;
-            if (arango != null) {
-                if (GlobalConfig.getEnv() == 1) {
-                    ArangoCpPack a_com = arango.legacyPack;
-                    if (a_com != null) {
-                        a_com.com = new ArangoCpVD(company.oc_code, company.oc_name, company.oc_area);
-                    }
-                } else {
-                    arango.company = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
-                }
-            }
 
-
-            SharedData.close(tasks_key);
+            SharedData.close(task);
         }
 
 
 
 //        int diff = batch-count;
-//        while(ComBase.getLatch(tasks_key).getCount() != diff) {
+//        while(SubTaskComBase.getLatch(task).getCount() != diff) {
 //            Thread.sleep(20);
 //        }
 
@@ -141,7 +122,7 @@ public class RedisCompanyIndexWriter extends BaseWriter {
         Map<String, Set<String>> truesetmap = new HashMap<>();  // these data will save as set-typed pairs in redis
         Map<String, Set<String>> fakesetmap = new HashMap<>();  // only
 
-        List<ComPack> cps = SharedData.getBatch(tasks_key);
+        List<ComPack> cps = SharedData.getBatch(task);
         for (ComPack cp : cps) {
             RedisCompanyIndex com = cp.redis;
 
@@ -228,7 +209,14 @@ public class RedisCompanyIndexWriter extends BaseWriter {
         }
     }
 
-
+    protected void state2_pre() throws Exception {
+        EsUpdateLogEntity log = EsUpdateLogSearcher.getLastLog(this.task);
+        if (log == null) {
+            checkpoint = 0;
+        } else {
+            checkpoint = log.tbl_id;
+        }
+    }
     protected boolean state2_inner() throws Exception {
         return false;
     }

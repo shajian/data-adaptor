@@ -178,11 +178,13 @@ public class ComUtil {
         oc_name = oc_name.trim();
         int idx = oc_name.indexOf("公司");
         if (idx >= 6) {
-            char c = oc_name.charAt(idx+2);
-            if (c == '(' || c == '（') {
-                c = oc_name.charAt(oc_name.length() - 1);
-                if (c == ')' || c == '）') {
-                    return oc_name.substring(0, idx+2);
+            if (idx+2 < oc_name.length()) {
+                char c = oc_name.charAt(idx + 2);
+                if (c == '(' || c == '（') {
+                    c = oc_name.charAt(oc_name.length() - 1);
+                    if (c == ')' || c == '）') {
+                        return oc_name.substring(0, idx + 2);
+                    }
                 }
             }
         } else {
@@ -209,6 +211,6 @@ public class ComUtil {
      */
     public static int edgeLength(int outDegree) {
         if (outDegree <= 0) return 1;   // default
-        return 1 + outDegree/ArangodbCompanyWriter.dist_step;
+        return 1 + outDegree/ MainTaskArangodbCompany.dist_step;
     }
 }

@@ -60,7 +60,7 @@ public class EsConfigBus {
 //        if (taskConfig == null) {
 //            taskConfig = new HashMap<>();
 //            Properties p = new Properties();
-//            FileInputStream fis = new FileInputStream("config/EsCompany.txt");
+//            FileInputStream fis = new FileInputStream("config/Task_Es_Company.txt");
 //            InputStreamReader reader = new InputStreamReader(fis, "utf-8");
 //            p.load(reader);
 //

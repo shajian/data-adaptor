@@ -1,5 +1,7 @@
 package com.qianzhan.qichamao.util;
 
+import com.qianzhan.qichamao.config.GlobalConfig;
+
 import java.io.*;
 import java.util.Properties;
 import java.util.concurrent.locks.Lock;
@@ -14,8 +16,15 @@ public class DbConfigBus {
             lock.lock();
             if (dbConfig == null) {
                 try {
-//                    is = new FileInputStream("db.properties.private");
-                    is = DbConfigBus.class.getResourceAsStream("/db.properties.private");
+                    String configFile = "/db.properties.private";
+                    if (GlobalConfig.getEnv() == 1) {   // local env.
+                        is = DbConfigBus.class.getResourceAsStream(configFile);
+                    } else {
+                        // do not read config file from jar, since it is very troublesome to change some configurations.
+                        // read config file in the same directory of jar.
+                        configFile = MiscellanyUtil.jarDir() + configFile;
+                        is = new FileInputStream(new File(configFile));
+                    }
                     dbConfig = new Properties();
                     dbConfig.load(is);
                 } catch (Exception e) {
@@ -26,6 +35,7 @@ public class DbConfigBus {
                             is.close();
                         } catch (IOException e) {
                             // todo log
+                            e.printStackTrace();
                         }
                 }
             }

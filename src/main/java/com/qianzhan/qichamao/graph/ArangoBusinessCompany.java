@@ -30,7 +30,7 @@ public class ArangoBusinessCompany {
     private String name;
     private String area;
 //    // used for sort
-//    private long degree;
+    private long degree;
 
     private ArangoBusinessCompany() { }
 
@@ -42,7 +42,7 @@ public class ArangoBusinessCompany {
      */
     public ArangoBusinessCompany(String code, String name, String area) {
         this.name = name;
-        this.area = area == null ? "" : area;
+        this.area = area;
         this.key = code;
         this.id = String.format("%s/%s", collection, code);
     }
@@ -64,6 +64,8 @@ public class ArangoBusinessCompany {
         BaseDocument doc = new BaseDocument(this.key);
         doc.setId(this.id);
         doc.addAttribute("name", name);
+        doc.addAttribute("area", area);
+        doc.addAttribute("degree", degree);
         return doc;
     }
 
@@ -90,6 +92,8 @@ public class ArangoBusinessCompany {
 
         v.area = (String) props.get("area");
         v.name = (String) props.get("name");
+        Long degree = (Long) props.get("degree");
+        if (degree != null) v.degree = degree;
         return v;
     }
 

@@ -7,6 +7,7 @@ import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import lombok.Setter;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.File;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -16,14 +17,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class BaseWriter {
+public abstract class MainTaskBase {
     protected int checkpoint = 0;
     protected String checkpointName;
     protected BaseConfigBus config;
-    protected String tasks_key;
+    protected TaskType task;
     protected List<ComHook> preHooks;
     protected List<ComHook> postHooks;
-    protected int[] tasks;
     // whether app was closed manually
     @Setter
     private boolean shutdown;
@@ -43,22 +43,23 @@ public abstract class BaseWriter {
     protected int thread_queue_size_ratio;
 
 
-    public BaseWriter(String file) throws Exception {
+    public MainTaskBase(String file) throws Exception {
+        File f = new File(file);
+
+        String[] parts = f.getName().split("_");
+        task = TaskType.valueOf(parts[1].toLowerCase());
         config = new BaseConfigBus(file);
         int env = config.getInt("env", -1);
         if (env > 0) GlobalConfig.setEnv((byte)env);
         batch = config.getInt("batch", 1000);
         state = config.getInt("state", 1);
-        tasks_key = config.getString("tasks_key");
-        tasks = config.getInts("tasks");
         iter_print_interval = config.getInt("iter_print_interval", 0);
         String[] filter_outs_str = config.getString("filter_out").split("\\s");
         filter_outs = new Pattern[filter_outs_str.length];
         for (int i = 0; i < filter_outs_str.length; ++i) {
             filter_outs[i] = Pattern.compile(String.format("^%s$", filter_outs_str[i]));
         }
-        SharedData.registerConfig(tasks_key, config);
-        ComPack.registerTasktype(config.getString("tasks_key"), tasks);
+        SharedData.registerConfig(task, config);
 
         if (config.getBool("multi_thread", false)) {
             thread_queue_size_ratio = config.getInt("thread_queue_size_ratio", 5);
@@ -86,6 +87,7 @@ public abstract class BaseWriter {
     protected void state4_pre() throws Exception { }
     protected void state5_pre() throws Exception { }
     protected void state6_pre() throws Exception { }
+
     protected void state1_post() throws Exception { }
     protected void state2_post() throws Exception { }
     protected void state3_post() throws Exception { }

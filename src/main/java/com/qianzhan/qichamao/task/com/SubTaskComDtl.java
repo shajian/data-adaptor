@@ -18,8 +18,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-public class ComDtl extends ComBase {
-    public ComDtl(String key) {
+public class SubTaskComDtl extends SubTaskComBase {
+    public SubTaskComDtl(TaskType key) {
         super(key);
     }
 

@@ -51,8 +51,8 @@ public class ArangoBusinessPack {
 //    public List<ArangoBusinessRelation> r_shs;
 //    public List<ArangoBusinessRelation> r_sms;
 
-    public ArangoBusinessPack() throws Exception {
-        ArangoBusinessRepository.singleton();   // preheat to load annotations
+    public ArangoBusinessPack() {
+//        ArangoBusinessRepository.singleton();   // preheat to load annotations
         if (GlobalConfig.getEnv() == 1) {
             legacyPack = new ArangoCpPack();
         }

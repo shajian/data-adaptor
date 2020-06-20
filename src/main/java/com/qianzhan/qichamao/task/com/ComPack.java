@@ -6,7 +6,9 @@ import com.qianzhan.qichamao.graph.ArangoBusinessPack;
 import com.qianzhan.qichamao.entity.MongoComDtl;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class ComPack {
     public EsCompanyEntity es;
@@ -15,29 +17,13 @@ public class ComPack {
     public ArangoBusinessPack arango;
 
 
-    private static Map<String, int[]> tts = new HashMap<>();
+    public TaskType task;
 
-    public static void registerTasktype(String key, int[] tasks) {
-        tts.put(key, tasks);
-    }
-    public ComPack (String key) throws Exception {
-        this(tts.get(key));
-    }
-
-    public ComPack(int[] tasks) throws Exception {
-        for (int tt : tasks) {
-            if ((tt & TaskType.es.getValue()) != 0) {
-                es = new EsCompanyEntity();
-            }
-            if ((tt & TaskType.mongo.getValue()) != 0) {
-                mongo = new MongoComDtl();
-            }
-            if ((tt & TaskType.redis.getValue()) != 0) {
-                redis = new RedisCompanyIndex();
-            }
-            if ((tt & TaskType.arango.getValue()) != 0) {
-                arango = new ArangoBusinessPack();
-            }
-        }
+    public ComPack(TaskType task) {
+        if (task == TaskType.es) es = new EsCompanyEntity();
+        else if (task == TaskType.arango) arango = new ArangoBusinessPack();
+        else if (task == TaskType.mongo) mongo = new MongoComDtl();
+        else if (task == TaskType.redis) redis = new RedisCompanyIndex();
+        this.task = task;
     }
 }

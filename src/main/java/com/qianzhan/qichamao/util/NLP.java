@@ -4,12 +4,24 @@ import com.hankcs.hanlp.HanLP;
 import com.hankcs.hanlp.corpus.tag.Nature;
 import com.hankcs.hanlp.seg.Segment;
 import com.hankcs.hanlp.seg.common.Term;
+import com.hankcs.hanlp.utility.Predefine;
+import com.qianzhan.qichamao.config.GlobalConfig;
 
 import java.util.List;
 
 public class NLP {
-    private static Segment segment = HanLP.newSegment().enableNameRecognize(true)
-            .enableJapaneseNameRecognize(true).enableOrganizationRecognize(true);
+    private static Segment segment;
+
+    static {
+        if (GlobalConfig.getEnv() == 2) {
+            // redirect the hanlp properties path
+            String hanlp_prop = MiscellanyUtil.jarDir() + "/hanlp.properties";
+            Predefine.HANLP_PROPERTIES_PATH = hanlp_prop;
+        }
+        segment = HanLP.newSegment().enableNameRecognize(true)
+                .enableJapaneseNameRecognize(true).enableOrganizationRecognize(true);
+    }
+
 
     /**
      * 0: unknown

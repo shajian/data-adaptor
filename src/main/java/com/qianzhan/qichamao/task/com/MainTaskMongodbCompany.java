@@ -12,14 +12,14 @@ import org.bson.Document;
 
 import java.util.*;
 
-public class MongodbCompanyWriter extends BaseWriter {
+public class MainTaskMongodbCompany extends MainTaskBase {
 
-    public MongodbCompanyWriter() throws Exception {
-        super("config/MongoCompany.txt");
+    public MainTaskMongodbCompany() throws Exception {
+        super("config/Task_Mongo_Company.txt");
         checkpointName = "data-adaptor.mongo.company";
     }
     /**
-     * for state==1, this task is attached to EsCompanyWriter, and
+     * for state==1, this task is attached to MainTaskEsCompany, and
      * only provides some APIs to implement writing into Mongodb.
      */
 
@@ -31,8 +31,8 @@ public class MongodbCompanyWriter extends BaseWriter {
         MongoClientRegistry.client(MongoClientRegistry.CollName.dtl).insert(docs);
     }
 
-    public static void writeDtl2Db(String tasks_key) {
-        List<ComPack> cps = SharedData.getBatch(tasks_key);
+    public static void writeDtl2Db(TaskType task) {
+        List<ComPack> cps = SharedData.getBatch(task);
         List<Document> docs = new ArrayList<>(cps.size());
         for (ComPack cp: cps) {
             docs.add(BeanUtil.obj2Doc(cp.mongo));

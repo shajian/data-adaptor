@@ -26,7 +26,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.function.Function;
 
-public class ArangodbCompanyWriter extends BaseWriter {
+public class MainTaskArangodbCompany extends MainTaskBase {
 //    private static ArangoComClient client = ArangoComClient.getSingleton();
 
     private int path_thre;
@@ -42,74 +42,34 @@ public class ArangodbCompanyWriter extends BaseWriter {
 
 
     public void insert() {
-        insert_static(this.tasks_key);
+        insert_static(this.task);
     }
 
-    public static void insert_static(String tasks_key) {
+    public static void insert_static(TaskType task) {
         try {
-            ArangoWriter.insert(SharedData.getBatch(tasks_key));
+            ArangoWriter.insert(SharedData.getBatch(task));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
 
-    public ArangodbCompanyWriter() throws Exception {
-        super("config/ArangodbCompany.txt");
+    public MainTaskArangodbCompany() throws Exception {
+        super("config/Task_Arango_Company.txt");
         checkpointName = "data-adaptor.arango.company";
         dist_step = config.getInt("dist_step", 1000);
-    }
-
-    protected void state1_pre() {
-        preHooks = new ArrayList<>();
-        postHooks = new ArrayList<>();
-        preHooks.add(() -> SharedData.openBatch(tasks_key));
-
-        postHooks.add(() -> SharedData.closeBatch(tasks_key));
-
-    }
-
-    /**
-     * bulk write company vertices into Arangodb
-     * @return
-     * @throws Exception
-     */
-    protected boolean state1_inner() throws Exception {
-        List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
-        if (companies.size() == 0) return false;
-        for (OrgCompanyList company : companies) {
-            if (company.oc_id > checkpoint) checkpoint = company.oc_id;
-
-            if (!validateCode(company.oc_code)) continue;
-            String area = company.oc_area;
-            if (area.startsWith("71") || area.startsWith("81") || area.startsWith("82")) {
-                continue;
-            }
-            company.oc_name = company.oc_name.trim();
-            if (filter_out(company.oc_name)) continue;
-
-            SharedData.open(tasks_key);
-            ComPack cp = SharedData.get(tasks_key);
-
-            ArangoBusinessPack a_com = cp.arango;
-            a_com.oc_code = company.oc_code;
-            a_com.company = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
-            SharedData.close(tasks_key);
-        }
-        System.out.println("writing company vertices into arango...");
-        insert();
-        return true;
+        ArangoBusinessRepository.singleton();       // preheat this object
     }
 
 
 
-    protected void state3_pre() throws Exception {
+    protected void state1_pre() throws Exception {
         ArangoBusinessRepository.singleton().createGraph();
         preHooks = new ArrayList<>();
         postHooks = new ArrayList<>();
-        preHooks.add(() -> SharedData.openBatch(tasks_key));
+        preHooks.add(() -> SharedData.openBatch(task));
 
-        postHooks.add(() -> SharedData.closeBatch(tasks_key));
+        postHooks.add(() -> SharedData.closeBatch(task));
     }
 
     /**
@@ -119,11 +79,11 @@ public class ArangodbCompanyWriter extends BaseWriter {
      * @return
      * @throws Exception
      */
-    protected boolean state3_inner() throws Exception {
+    protected boolean state1_inner() throws Exception {
         List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;
 
-        ComBase.resetLatch(tasks_key, batch*3);
+        SubTaskComBase.resetLatch(task, batch*3);
         int count = 0;
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
@@ -136,8 +96,8 @@ public class ArangodbCompanyWriter extends BaseWriter {
             company.oc_name = company.oc_name.trim();
             if (filter_out(company.oc_name)) continue;
 
-            SharedData.open(tasks_key);
-            ComPack cp = SharedData.get(tasks_key);
+            SharedData.open(task);
+            ComPack cp = SharedData.get(task);
 
             ArangoBusinessPack a_com = cp.arango;
             a_com.oc_code = company.oc_code;
@@ -145,21 +105,21 @@ public class ArangodbCompanyWriter extends BaseWriter {
             a_com.com = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area).to();
 
             //
-            pool.execute(new ComDtl(tasks_key));
-            pool.execute(new ComMember(tasks_key));
-            pool.execute(new ComShareHolder(tasks_key));
-//            pool.execute(new ComContact(tasks_key));
+            pool.execute(new SubTaskComDtl(task));
+            pool.execute(new SubTaskComMember(task));
+            pool.execute(new SubTaskComShareHolder(task));
+//            pool.execute(new SubTaskComContact(task));
 
-            SharedData.close(tasks_key);
+            SharedData.close(task);
             count++;
         }
         // wait for all sub-tasks finishing
         int diff = (batch-count)*3;
-        while(ComBase.getLatch(tasks_key).getCount() != diff) {
+        while(SubTaskComBase.getLatch(task).getCount() != diff) {
             Thread.sleep(100);
         }
 
-        System.out.println("writing lp, sh, sm into arango..." + new Date().toString());
+//        System.out.println("writing lp, sh, sm into arango..." + new Date().toString());
 
         insert();
 //        Thread.sleep(10);
@@ -591,7 +551,7 @@ public class ArangodbCompanyWriter extends BaseWriter {
 
         if (companies.size() == 0) return false;
 
-        ComBase.resetLatch(tasks_key, batch*3);
+        SubTaskComBase.resetLatch(task, batch*3);
         int count = 0;
         for (OrgCompanyList company : companies) {
             if (!validateCode(company.oc_code)) continue;
@@ -599,8 +559,8 @@ public class ArangodbCompanyWriter extends BaseWriter {
             company.oc_name = company.oc_name.trim();
             if (filter_out(company.oc_name)) continue;
 
-            SharedData.open(tasks_key);
-            ComPack cp = SharedData.get(tasks_key);
+            SharedData.open(task);
+            ComPack cp = SharedData.get(task);
 
             ArangoBusinessPack a_com = cp.arango;
             a_com.oc_code = company.oc_code;
@@ -608,21 +568,21 @@ public class ArangodbCompanyWriter extends BaseWriter {
 //            arango.com = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
 
             //
-            pool.execute(new ComDtl(tasks_key));
-            pool.execute(new ComMember(tasks_key));
-            pool.execute(new ComShareHolder(tasks_key));
-//            pool.execute(new ComContact(tasks_key));
+            pool.execute(new SubTaskComDtl(task));
+            pool.execute(new SubTaskComMember(task));
+            pool.execute(new SubTaskComShareHolder(task));
+//            pool.execute(new SubTaskComContact(task));
 
-            SharedData.close(tasks_key);
+            SharedData.close(task);
             count++;
         }
         // wait for all sub-tasks finishing
         int diff = (batch-count)*3;
-        while(ComBase.getLatch(tasks_key).getCount() != diff) {
+        while(SubTaskComBase.getLatch(task).getCount() != diff) {
             Thread.sleep(100);
         }
 
-        ArangoWriter.update(SharedData.getBatch(tasks_key));
+        ArangoWriter.update(SharedData.getBatch(task));
         return true;
     }
 

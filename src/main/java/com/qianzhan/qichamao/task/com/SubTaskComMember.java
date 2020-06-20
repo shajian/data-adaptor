@@ -11,8 +11,8 @@ import com.qianzhan.qichamao.util.NLP;
 
 import java.util.*;
 
-public class ComMember extends ComBase {
-    public ComMember(String key) {
+public class SubTaskComMember extends SubTaskComBase {
+    public SubTaskComMember(TaskType key) {
         super(key);
     }
     @Override

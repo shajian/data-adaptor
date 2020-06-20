@@ -5,8 +5,8 @@ import com.qianzhan.qichamao.entity.OrgCompanyGeo;
 import com.qianzhan.qichamao.dal.mybatis.MybatisClient;
 import org.elasticsearch.common.geo.GeoPoint;
 
-public class ComGeo extends ComBase {
-    public ComGeo(String key) {
+public class SubTaskComGeo extends SubTaskComBase {
+    public SubTaskComGeo(TaskType key) {
         super(key);
     }
     @Override
