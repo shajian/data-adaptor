@@ -50,9 +50,13 @@ public abstract class MainTaskBase {
         task = TaskType.valueOf(parts[1].toLowerCase());
         config = new BaseConfigBus(file);
         int env = config.getInt("env", -1);
-        if (env > 0) GlobalConfig.setEnv((byte)env);
+        if (env > 0) {
+            GlobalConfig.setEnv((byte)env);
+        }
+        System.out.println("detecting the execution environment no.: "+env);
         batch = config.getInt("batch", 1000);
-        state = config.getInt("state", 1);
+        state = config.getInt("state", -1);
+        System.out.println("detecting the execution phase state no.: "+state);
         iter_print_interval = config.getInt("iter_print_interval", 0);
         String[] filter_outs_str = config.getString("filter_out").split("\\s");
         filter_outs = new Pattern[filter_outs_str.length];
@@ -65,7 +69,7 @@ public abstract class MainTaskBase {
             thread_queue_size_ratio = config.getInt("thread_queue_size_ratio", 5);
             max_threads = config.getInt("max_threads", 0);
             if (max_threads <= 0) {
-                max_threads = Runtime.getRuntime().availableProcessors() * 15;
+                max_threads = Runtime.getRuntime().availableProcessors() * 32;
             }
             BlockingQueue<Runnable> queue = new LinkedBlockingDeque<>(thread_queue_size_ratio*batch);
             pool = new ThreadPoolExecutor(max_threads, max_threads, 0, TimeUnit.SECONDS,
@@ -160,7 +164,7 @@ public abstract class MainTaskBase {
                 System.out.println("checkpoint reset to 0");
             }
         }
-        System.out.println("start to state...");
+        System.out.println("start processing at state "+state);
         int num = 0;
         while (state_iter()) {
             num++;

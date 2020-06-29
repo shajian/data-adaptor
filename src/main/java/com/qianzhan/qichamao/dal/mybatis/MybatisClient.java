@@ -1,12 +1,16 @@
 package com.qianzhan.qichamao.dal.mybatis;
 
+import com.qianzhan.qichamao.config.GlobalConfig;
 import com.qianzhan.qichamao.dal.DbName;
 import com.qianzhan.qichamao.entity.*;
+import com.qianzhan.qichamao.util.MiscellanyUtil;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -27,12 +31,23 @@ public class MybatisClient {
 //            Reader reader = Resources.getResourceAsReader("mybatis-config.xml");
 
             SqlSessionFactoryBuilder builder = new SqlSessionFactoryBuilder();
+            String configFile = "mybatis-config.xml";
+            if (GlobalConfig.getEnv() == 2) {   // publish version
+                configFile = MiscellanyUtil.jarDir() + "/" + configFile;
+            }
+            InputStream is = null;
+
             for (DbName db :
                     DbName.values()) {
-                InputStream is = Resources.getResourceAsStream("mybatis-config.xml");
+                if (GlobalConfig.getEnv() == 1) {
+                    is = Resources.getResourceAsStream(configFile);
+                } else {
+                    is = new FileInputStream(new File(configFile));
+                }
                 factories.put(db, builder.build(is, db.name()));
                 is.close();
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -296,5 +311,13 @@ public class MybatisClient {
         List<OrgCompanyContact> contacts = mapper.getCompanyContactBatch(start, count);
         session.close();
         return contacts;
+    }
+
+    public static List<Map<String, Object>> selectMany(String sql) {
+        SqlSession session = factories.get(DbName.com).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<Map<String, Object>> list = mapper.selectMany(sql);
+        session.close();
+        return list;
     }
 }

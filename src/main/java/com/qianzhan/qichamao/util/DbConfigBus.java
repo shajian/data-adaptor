@@ -25,6 +25,7 @@ public class DbConfigBus {
                         configFile = MiscellanyUtil.jarDir() + configFile;
                         is = new FileInputStream(new File(configFile));
                     }
+                    System.out.println("db config file: "+configFile);
                     dbConfig = new Properties();
                     dbConfig.load(is);
                 } catch (Exception e) {

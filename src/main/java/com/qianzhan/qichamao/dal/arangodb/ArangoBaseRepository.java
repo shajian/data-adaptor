@@ -580,27 +580,31 @@ public abstract class ArangoBaseRepository<T> {
 
 
 
-    public List<BaseEdgeDocument> searchByTos(Collection<String> tos) {
-        return searchByEnds(tos, false);
+    public List<BaseEdgeDocument> searchByTos(Collection<String> tos) throws Exception {
+        return searchByEnds(tos, 1);
     }
-    public List<BaseEdgeDocument> searchByFroms(Collection<String> froms) {
-        return searchByEnds(froms, true);
+    public List<BaseEdgeDocument> searchByFroms(Collection<String> froms) throws Exception {
+        return searchByEnds(froms, 2);
     }
 
     /**
      * search for edges according to edge end points.
      * @param ends list of end id
-     * @param from  true->_from; false->_to
+     * @param direction  2->_from; 1->_to; 3->both from and to
      * @return
      */
-    public List<BaseEdgeDocument> searchByEnds(Collection<String> ends, boolean from) {
+    public List<BaseEdgeDocument> searchByEnds(Collection<String> ends, int direction) throws Exception {
         if (MiscellanyUtil.isArrayEmpty(ends)) return null;
         ArangoDatabase db = client.db(database);
         String ids = String.join("', '", ends);
-        String attr = from ? "from" : "to";
+        String filter = null;
+        if (direction == 1) filter = String.format("e._to IN ['%s']", ids);
+        else if (direction == 2) filter = String.format("e._from IN ['%s']", ids);
+        else if (direction == 3) filter = String.format("e._from IN ['%s'] OR e._to IN ['%s']", ids, ids);
+        else throw new Exception("direction must be in {1,2,3}, but get "+direction);
         String aql = String.format(
-                "FOR e in %s FILTER e._%s IN ['%s'] RETURN e",
-                graphMeta.edge(), attr, ids
+                "FOR e in %s FILTER %s RETURN e",
+                graphMeta.edge(), filter, ids
         );
         ArangoCursor<BaseEdgeDocument> cursor = db.query(aql, BaseEdgeDocument.class);
         List<BaseEdgeDocument> edges = cursor.asListRemaining();

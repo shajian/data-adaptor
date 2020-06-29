@@ -76,6 +76,8 @@ public class MainTaskArangodbCompany extends MainTaskBase {
      * this is the normal method/process: read OrgCompanyList,
      *  and then multi-threadly read legal person, share holder and senior member
      *  but, only insert/insert legal person, share holder and senior member into Arangodb.
+     *
+     *  checkpoint: 142248249
      * @return
      * @throws Exception
      */
@@ -116,13 +118,10 @@ public class MainTaskArangodbCompany extends MainTaskBase {
         // wait for all sub-tasks finishing
         int diff = (batch-count)*3;
         while(SubTaskComBase.getLatch(task).getCount() != diff) {
-            Thread.sleep(100);
+            Thread.sleep(50);
         }
 
-//        System.out.println("writing lp, sh, sm into arango..." + new Date().toString());
-
         insert();
-//        Thread.sleep(10);
         return true;
     }
 
@@ -142,7 +141,6 @@ public class MainTaskArangodbCompany extends MainTaskBase {
         if (companies.size() == 0) return false;
 
 //        List<String> toRemoved = new ArrayList<>();
-        int i = 0;
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
 
@@ -161,8 +159,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
 //            codes.add(company.oc_code);                         // collect all and then remove them once a batch
 
 
-            combine(company.oc_code, i);
-            i++;
+            combine(company.oc_code, company.oc_id);
         }
 
 //        toRemoved.addAll(getEdgeByContact_Parallel(codes));     // collect all edges
@@ -251,20 +248,19 @@ public class MainTaskArangodbCompany extends MainTaskBase {
 
         // key: company vertex id, value: its all neighbours
         Map<String, Set<String>> companyWithNeighbours = new HashMap<>();
-        if (graphSize > 10000) {
-            //
+        if (graphSize > 12000) {
+            // print `trivials` size in time
             if (trivials.size() > 20000) {
                 System.out.println(String.format("\033[31;4mtrivials size %d\033[0m", trivials.size()));
             }
-            List<String> toIds = new ArrayList<>();
-//            toIds.add(ArangoBusinessCompany.collection + "/" + code);
-            for (BaseDocument vertex : vertices) {
+            List<String> toIds = new ArrayList<>();     // collect all company-vertices
+            for (BaseDocument vertex : vertices) {      // traverse all vertices on this graph
                 if (vertex == null) continue;
                 if (vertex.getKey().length() == 9) {    // company
                     toIds.add(vertex.getId());
                 }
 
-                if (toIds.size() >= 256) {
+                if (toIds.size() >= 256) {              // if company-vertices is too many, search them batch by batch
                     List<BaseEdgeDocument> edges = business.searchByTos(toIds);
                     for (BaseEdgeDocument edge : edges) {
                         if (edge == null) continue;
@@ -280,7 +276,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
                     toIds.clear();
                 }
             }
-            if (toIds.size() > 0) {
+            if (toIds.size() > 0) {                 // do not forget the tail batch
                 List<BaseEdgeDocument> edges = business.searchByTos(toIds);
                 for (BaseEdgeDocument edge : edges) {
                     if (edge == null) continue;
@@ -304,7 +300,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
             if (vertex == null) continue;
             // exclude the vertex that will be handled later
             for (Set<String> neighbours : companyWithNeighbours.values()) {
-                neighbours.remove(vertex.getId());
+                neighbours.remove(vertex.getId());  //
             }
 
             String key = vertex.getKey();   //.split("/")[1];
@@ -326,19 +322,60 @@ public class MainTaskArangodbCompany extends MainTaskBase {
         // check out those companies whose all neighbours are already included in this current
         //  connected graph represented by `vertices`.
         //  Those companies have no vertices to be merged after current merging
+        StringBuilder existing_sql = new StringBuilder();
+        boolean finished = false;
         for (String key : companyWithNeighbours.keySet()) {
             if (companyWithNeighbours.get(key).size() == 0) {
                 String trivial = key.split("/")[1];
-                trivials.add(trivial);
+                if (existing_sql.length() == 0) {
+                    existing_sql.append("select oc_id, oc_code from OrgCompanyList where oc_code in ('")
+                            .append(trivial).append("'");
+                } else {
+                    existing_sql.append(", '").append(trivial).append("'");
+                }
 
-//                if (notPrint) {
-//                    notPrint = false;
-//                    System.out.println(String.format(
-//                            "(%d) center code %s, person number %d/%d : ", idx, code, personNum, graphSize));
-//                }
-//                System.out.println(String.format("\t- catch a trivial company: %s", trivial));
+                if (existing_sql.length() > 5000) {
+                    existing_sql.append(")");
+                    List<Map<String, Object>> docs = MybatisClient.selectMany(existing_sql.toString());
+                    for (Map<String, Object> doc : docs) {
+                        Integer oc_id = (Integer) doc.get("oc_id");
+                        String oc_code = (String) doc.get("oc_code");
+                        if (oc_id != null) {
+                            int id = oc_id;
+                            if (id < idx) {
+                                trivials.remove(oc_code);
+                            } else if (id == idx) {
+                                finished = true;
+                                trivials.remove(oc_code);
+                            } else {
+                                trivials.add(oc_code);
+                            }
+                        }
+                    }
+                    existing_sql.delete(0, existing_sql.length());
+                }
             }
         }
+        if (existing_sql.length() > 0) {
+            existing_sql.append(")");
+            List<Map<String, Object>> docs = MybatisClient.selectMany(existing_sql.toString());
+            for (Map<String, Object> doc : docs) {
+                Integer oc_id = (Integer) doc.get("oc_id");
+                String oc_code = (String) doc.get("oc_code");
+                if (oc_id != null) {
+                    int id = oc_id;
+                    if (id < idx) {
+                        trivials.remove(oc_code);
+                    } else if (id == idx) {
+                        finished = true;
+                        trivials.remove(oc_code);
+                    } else {
+                        trivials.add(oc_code);
+                    }
+                }
+            }
+        }
+        if (finished) return;
 
 
 
@@ -359,118 +396,8 @@ public class MainTaskArangodbCompany extends MainTaskBase {
                 if (new_from_id == null) new_from_id = doc.getId();
                 else old_from_ids.add(doc.getId());
             }
-            if (notPrint) {
-                notPrint = false;
-                System.out.println(String.format(
-                        "(%d) center code %s, persons %d/%d : ", idx, code, personNum, graphSize));
-            }
-            String suffix = "", prefix = "";
-            if (groups.size() > 2) {
-                suffix = "\033[0m";
-                prefix = "\033[31;4m";
-            }
-            System.out.println(String.format(
-                    "\t- combine %s, %s %d %s",
-                    group.get(0).getProperties().get("name"), prefix, group.size(), suffix));
+
             business.merge(old_from_ids, new_from_id, false);
-
-
-//            // the following codes are original implementation which considers intervene
-//            for (int i = 0; i < group.size()-1; i++) {  // in a group, each two vertices may be combined
-//                BaseDocument start_vertex = group.get(i);         // start from a person vertex
-//                if (start_vertex == null) continue;
-//                // recall that peronal vertex's key is composed with code of related company and md5 of person name.
-//                String start_code = start_vertex.getKey().substring(0, 9);  // extract the related company code
-//                List<String> toMerged = new ArrayList<>();
-//                Set<String> start_person_froms = intervenes.get(start_code);
-//                if (start_person_froms == null) {
-//                    List<BaseEdgeDocument> start_edges = intervene.neighbours(
-//                            intervene.getGraphMeta().froms()[0] + "/" + start_code);
-//                    start_person_froms = new HashSet<>();
-//                    intervenes.put(start_code, start_person_froms);
-//                    if (start_edges != null) {
-//                        for (BaseEdgeDocument doc : start_edges) {
-//                            String from = doc.getFrom();
-//                            if (from.startsWith(ArangoBusinessPerson.collection))
-//                                start_person_froms.add(from);
-//                        }
-//                    }
-//                }
-//                String start_person_id = null;
-//                for (String id : start_person_froms) {
-//                    if (id.endsWith(name_md5)) {
-//                        start_person_id = id;
-//                        break;
-//                    }
-//                }
-//                for (int j = i+1; j < group.size(); j++) {
-//                    BaseDocument end_vertex = group.get(j);
-//                    if (end_vertex == null) continue;
-//
-//                    String end_code = end_vertex.getKey().substring(0, 9);
-//
-//                    if (start_code.equals(end_code)) {  // can not happen in fact
-//                        group.set(j, null);
-//                        continue;
-//                    }
-//                    // get neighbours of `start_code` and `end_code` respectively,
-//                    //  and if the name in intersection of the two groups of neighbours, then combine
-//
-//                    if (start_person_id != null) {
-//                        Set<String> end_person_froms = intervenes.get(end_code);
-//                        if (end_person_froms == null) {
-//                            String e_id = intervene.getGraphMeta().froms()[0] + "/" + end_code;
-//                            List<BaseEdgeDocument> end_edges = intervene.neighbours(
-//                                    e_id
-//                            );
-//                            end_person_froms = new HashSet<>();
-//                            intervenes.put(end_code, end_person_froms);
-//                            if (end_edges != null) {
-//                                for (BaseEdgeDocument doc : end_edges) {
-//                                    String from = doc.getFrom();
-//                                    if (from.startsWith(ArangoBusinessPerson.collection))
-//                                        end_person_froms.add(from);
-//                                }
-//                            }
-//                        }
-//
-//                        String end_person_id = null;
-//                        for (String id : end_person_froms) {
-//                            if (id.endsWith(name_md5)) {
-//                                end_person_id = id;
-//                                break;
-//                            }
-//                        }
-//                        if (end_person_id != null && !end_person_id.equals(start_person_id)) {
-//                            // start_person_id != end_person_id, this means the two code are in different cluster
-//                            //  and the two person vertices should not be combined.
-//                            continue;
-//                        }
-//                    }
-//
-//                    // try to merge if go here
-//                    toMerged.add(end_vertex.getId());
-//
-//
-//                    // because we limit the search max_depth=2, so it doesn't need to check the distance
-//                    //  between the two candidates to be combined. just combine them directly.
-//                    // olds: old edges(from and to)
-//
-//                    group.set(j, null);
-//                }
-//                if (toMerged.size() > 0) {
-//                    // executing merging here
-//                    if (notPrint) {
-//                        notPrint = false;
-//                        System.out.println(String.format(
-//                                "(%d) center code %s, person number %d/%d : ", idx, code, personNum, graphSize));
-//                    }
-//                    System.out.println(String.format(
-//                            "\t- prepare to combine %s, total number %d",
-//                            start_vertex.getProperties().get("name"), toMerged.size()+1));
-//                    business.merge(toMerged, start_vertex.getId(), false);
-//                }
-//            }
         }
     }
 
@@ -532,9 +459,8 @@ public class MainTaskArangodbCompany extends MainTaskBase {
         return documents.size() > 0;
     }
 
-    protected void state5_pre() throws Exception {
+    protected void state2_pre() throws Exception {
         // todo update ArangoDB `company-person-relation`
-        ArangoBusinessRepository.singleton();
     }
 
     /**
@@ -544,7 +470,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
      * @return
      * @throws Exception
      */
-    protected boolean state5_inner() throws Exception {
+    protected boolean state2_inner() throws Exception {
         // todo update ArangoDB `company-person-relation`
         // pop data from synchronized table
         List<OrgCompanyList> companies = new ArrayList<>();
@@ -588,7 +514,6 @@ public class MainTaskArangodbCompany extends MainTaskBase {
 
     @Override
     protected void state6_pre() throws Exception {
-        ArangoBusinessRepository.singleton();
     }
 
     /**
@@ -599,11 +524,13 @@ public class MainTaskArangodbCompany extends MainTaskBase {
     protected boolean state6_inner() throws Exception {
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
         int company_vertex_id_length = ArangoBusinessCompany.collection.length()+10;
-//        updateDegree();
+
         List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;
-        int i = 0;
-        List<String> tos = new ArrayList<>();
+
+        // key: vertex key, value: vertex out-in degree
+        Map<String, Integer> map = new HashMap<>();     //
+        List<String> keys = new ArrayList<>();
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
 
@@ -614,24 +541,19 @@ public class MainTaskArangodbCompany extends MainTaskBase {
             }
             company.oc_name = company.oc_name.trim();
             if (filter_out(company.oc_name)) continue;
-            tos.add(ArangoBusinessCompany.collection+"/"+company.oc_code);
-            i++;
+
+            keys.add(company.oc_code);
+            map.put(ArangoBusinessCompany.collection+"/"+company.oc_code, 0);
         }
-        if (tos.size() > 0) {
-            List<BaseEdgeDocument> edges = business.searchByTos(tos);
+        if (map.size() > 0) {
+            List<BaseEdgeDocument> edges = business.searchByTos(map.keySet());
             if (edges == null) return true;
 
-            // key: vertex key, value: vertex out-in degree
-            Map<String, Integer> map = new HashMap<>();     //
-            List<String> keys = new ArrayList<>();
             for (BaseEdgeDocument edge : edges) {
                 String id = edge.getFrom();
-                if (id.length() > company_vertex_id_length) {
-                    if (!map.containsKey(id)) {
-//                        froms.add(id);
-                        map.put(id, 0);
-                        keys.add(id.split("/")[1]);
-                    }
+                if (!map.containsKey(id)) {
+                    map.put(id, 0);
+                    keys.add(id.split("/")[1]);
                 }
             }
             Collection<BaseDocument> vertices = business.get(ArangoBusinessPerson.collection, keys);
@@ -643,7 +565,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
                     map.remove(id);
                 }
             }
-            edges = business.searchByFroms(map.keySet());
+            edges = business.searchByEnds(map.keySet(), 3);
             if (edges == null) return true;
 
             for (BaseEdgeDocument edge : edges) {

@@ -5,6 +5,8 @@
 <configuration>
 
     <properties resource="db.properties.private"></properties>
+<!--    switch to the following line when publish this APP -->
+<!--    <properties url="/absolute/path/to/database/configuration/properties/file"></properties>-->
 
     <typeAliases>
         <typeAlias alias="company" type="com.qianzhan.qichamao.entity.OrgCompanyList"></typeAlias>

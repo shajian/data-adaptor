@@ -36,7 +36,7 @@ public class CompanyPersonIdentify {
      * @param count batch size for once searching
      * @return collection of clusters.
      */
-    public static Map<String, List<String>> searchClusters(String name, int offset, int count) {
+    public static Map<String, List<String>> searchClusters(String name, int offset, int count) throws Exception {
         List<String> center_ids = new ArrayList<>();
         try {
             List<BaseDocument> centers = intervene.searchByName(intervene.getGraphMeta().froms()[0], name, offset, count);

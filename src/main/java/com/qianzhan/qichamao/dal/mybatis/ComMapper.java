@@ -4,6 +4,7 @@ import com.qianzhan.qichamao.entity.*;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ComMapper {
     List<OrgCompanyList> getCompanies(@Param("start") int start, @Param("count") int count);
@@ -35,4 +36,6 @@ public interface ComMapper {
     List<String> getGsxtSubtableNames();
 
     List<OrgCompanyContact> getCompanyContactBatch(@Param("start") int start, @Param("count") int count);
+
+    List<Map<String, Object>> selectMany(String sql);
 }

@@ -111,4 +111,8 @@
     <select id="getCompanyContactBatch" resultType="com.qianzhan.qichamao.entity.OrgCompanyContact">
         select top ${count} ID, oc_code, oc_type, oc_contact, oc_status from OrgCompanyContact where ID > ${start} order by ID;
     </select>
+
+    <select id="selectMany" parameterType="java.lang.String" resultType="java.util.HashMap">
+        ${value}
+    </select>
 </mapper>
