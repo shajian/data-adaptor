@@ -9,8 +9,8 @@
 <!--    <properties url="/absolute/path/to/database/configuration/properties/file"></properties>-->
 
     <typeAliases>
-        <typeAlias alias="company" type="com.qianzhan.qichamao.entity.OrgCompanyList"></typeAlias>
-        <typeAlias type="com.qianzhan.qichamao.entity.RetrieveRange" alias="range"></typeAlias>
+        <typeAlias alias="company" type="com.qcm.entity.OrgCompanyList"></typeAlias>
+        <typeAlias type="com.qcm.entity.RetrieveRange" alias="range"></typeAlias>
     </typeAliases>
     <!-- 数据库环境 -->
     <environments default="com">

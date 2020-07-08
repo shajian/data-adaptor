@@ -1,6 +1,6 @@
 state=1
 
-// 1: test; 2: publish
+# 1: test; 2: publish
 env=1
 
 # multi_thread mode?

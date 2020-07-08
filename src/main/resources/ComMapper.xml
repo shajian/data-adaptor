@@ -2,36 +2,36 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.qianzhan.qichamao.dal.mybatis.ComMapper">
+<mapper namespace="com.qcm.dal.mybatis.ComMapper">
     <select id="getCompanies" resultType="company">
         select top ${count} oc_id, oc_code, oc_name, oc_address, oc_number, oc_area, oc_issuetime, oc_creditcode, oc_companytype from OrgCompanyList where oc_id &gt; ${start} order by oc_id;
     </select>
 
-    <select id="getCompanyDtl" resultType="com.qianzhan.qichamao.entity.OrgCompanyDtl" parameterType="string">
+    <select id="getCompanyDtl" resultType="com.qcm.entity.OrgCompanyDtl" parameterType="string">
         select top 1 od_oc_code, od_faRen, od_regM, od_regMoney, od_regDate, od_bussinessDes, od_ext from OrgCompanyDtl where od_oc_code='${oc_code}';
     </select>
 
 
-    <select id="getCompanyMembers" resultType="com.qianzhan.qichamao.entity.OrgCompanyDtlMgr" parameterType="string">
+    <select id="getCompanyMembers" resultType="com.qcm.entity.OrgCompanyDtlMgr" parameterType="string">
         select top 8000 om_oc_code, om_name, om_position from OrgCompanyDtlMgr where om_oc_code='${oc_code}';
     </select>
 
 
-    <select id="getCompanyGDs" resultType="com.qianzhan.qichamao.entity.OrgCompanyDtlGD" parameterType="string">
+    <select id="getCompanyGDs" resultType="com.qcm.entity.OrgCompanyDtlGD" parameterType="string">
         select top 8000 og_oc_code, og_name, og_money, og_BL from OrgCompanyDtlGD where og_oc_code='${oc_code}';
     </select>
 
-    <select id="getCompanyMembersGsxt" resultType="com.qianzhan.qichamao.entity.OrgCompanyDtlMgr">
+    <select id="getCompanyMembersGsxt" resultType="com.qcm.entity.OrgCompanyDtlMgr">
         select top 8000 om_oc_code, om_name, om_status, om_position from OrgCompanyGsxtDtlMgr_${tail} where om_oc_code='${oc_code}';
     </select>
 
-    <select id="getCompanyGDsGsxt" resultType="com.qianzhan.qichamao.entity.OrgCompanyGsxtDtlGD">
+    <select id="getCompanyGDsGsxt" resultType="com.qcm.entity.OrgCompanyGsxtDtlGD">
         select top 8000 og_oc_code, og_name, og_type, og_subscribeAccount, og_status, og_realAccount from OrgCompanyGsxtDtlGD_${tail} where og_oc_code='${oc_code}';
     </select>
 
 
 
-    <select id="getCompanyContacts" resultType="com.qianzhan.qichamao.entity.OrgCompanyContact" parameterType="string">
+    <select id="getCompanyContacts" resultType="com.qcm.entity.OrgCompanyContact" parameterType="string">
         select top 1000 oc_code, oc_type, oc_contact, oc_contactName, oc_status from OrgCompanyContact where oc_code='${oc_code}';
     </select>
 
@@ -39,11 +39,11 @@
         select top 1000 oc_usedName from OrgCompanyGsxtNameUsed where oc_code='${oc_code}';
     </select>
 
-    <select id="getCompanyIndustries" resultType="com.qianzhan.qichamao.entity.OrgCompanyIndustry">
+    <select id="getCompanyIndustries" resultType="com.qcm.entity.OrgCompanyIndustry">
         SELECT top 100 oc_code, oc_data, oc_type from OrgCompanyExtensionData_${tail} where oc_code='${oc_code}';
     </select>
 
-    <select id="getCompanyGeo" resultType="com.qianzhan.qichamao.entity.OrgCompanyGeo" parameterType="string">
+    <select id="getCompanyGeo" resultType="com.qcm.entity.OrgCompanyGeo" parameterType="string">
         SELECT top 1 oc_code, latitude, longitude from OrgCompanyGeo where oc_code='${oc_code}';
     </select>
 
@@ -51,11 +51,11 @@
         SELECT top 8000 ob_name from OrgCompanyBrand${tail} where ob_oc_code='${oc_code}';
     </select>
 
-    <select id="getCompanyTags" resultType="com.qianzhan.qichamao.entity.OrgCompanyTag">
+    <select id="getCompanyTags" resultType="com.qcm.entity.OrgCompanyTag">
         SELECT top 100 code, brandname, score, isvalid from BindCompanyBrand where code='${oc_code}'
     </select>
 
-    <select id="getBrowseLogs" resultType="com.qianzhan.qichamao.entity.OrgBrowseLog">
+    <select id="getBrowseLogs" resultType="com.qcm.entity.OrgBrowseLog">
         SELECT top ${count} bl_id, bl_oc_code from BrowseLog where bl_id>${start}
     </select>
 
@@ -79,11 +79,11 @@
         SELECT top ${count} id as start, count from BrowseCount where id > ${start};
     </select>
 
-    <select id="getCompanyStatisticsInfo" resultType="com.qianzhan.qichamao.entity.OrgCompanyStatisticsInfo">
+    <select id="getCompanyStatisticsInfo" resultType="com.qcm.entity.OrgCompanyStatisticsInfo">
         SELECT top 1 * from CompanyStatisticsInfoTwo where oc_code='${oc_code}';
     </select>
 
-    <select id="getCompanyStatisticsInfos" resultType="com.qianzhan.qichamao.entity.OrgCompanyStatisticsInfo">
+    <select id="getCompanyStatisticsInfos" resultType="com.qcm.entity.OrgCompanyStatisticsInfo">
         SELECT top ${count} * from CompanyStatisticsInfoTwo with(nolock) where id > ${start};
     </select>
 
@@ -93,22 +93,22 @@
 
 
 
-    <select id="getCompanyMemberGsxtBatch" resultType="com.qianzhan.qichamao.entity.OrgCompanyDimBatch">
+    <select id="getCompanyMemberGsxtBatch" resultType="com.qcm.entity.OrgCompanyDimBatch">
         select top ${count} om_id as a_id, om_oc_code as a_code, om_name as a_name, om_status as a_status from OrgCompanyGsxtDtlMgr_${tail} where om_id > ${start} order by om_id;
     </select>
-    <select id="getCompanyGDGsxtBatch" resultType="com.qianzhan.qichamao.entity.OrgCompanyDimBatch">
+    <select id="getCompanyGDGsxtBatch" resultType="com.qcm.entity.OrgCompanyDimBatch">
         select top ${count} og_int as a_id, og_oc_code as a_code, og_name as a_name from OrgCompanyGsxtDtlGD_${tail} where og_int > ${start} order by og_int;
     </select>
-    <select id="getCompanyMemberBatch" resultType="com.qianzhan.qichamao.entity.OrgCompanyDimBatch">
+    <select id="getCompanyMemberBatch" resultType="com.qcm.entity.OrgCompanyDimBatch">
         select top ${count} om_id as a_id, om_oc_codeas a_code, om_name as a_name from OrgCompanyDtlMgr where om_id > ${start} order by om_id;
     </select>
-    <select id="getCompanyGDBatch" resultType="com.qianzhan.qichamao.entity.OrgCompanyDimBatch">
+    <select id="getCompanyGDBatch" resultType="com.qcm.entity.OrgCompanyDimBatch">
         select top ${count} og_int as a_id, og_oc_code as a_code, og_name as a_name from OrgCompanyDtlGD where og_int > ${start} order by og_int;
     </select>
-    <select id="getCompanyDtls" resultType="com.qianzhan.qichamao.entity.OrgCompanyDimBatch">
+    <select id="getCompanyDtls" resultType="com.qcm.entity.OrgCompanyDimBatch">
         select top ${count} od_id as a_id, od_oc_code as a_code, od_faRen as a_name from OrgCompanyDtl where od_id > ${start} order by od_id;
     </select>
-    <select id="getCompanyContactBatch" resultType="com.qianzhan.qichamao.entity.OrgCompanyContact">
+    <select id="getCompanyContactBatch" resultType="com.qcm.entity.OrgCompanyContact">
         select top ${count} ID, oc_code, oc_type, oc_contact, oc_status from OrgCompanyContact where ID > ${start} order by ID;
     </select>
 

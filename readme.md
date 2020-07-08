@@ -42,6 +42,13 @@ mvn clean package
 ```
 (If want to skip unit test, add option `-Dmaven.skip.test=true` or `-DskipTests=true`)
 
+Now add scala module in this project, and to package this project, please use
+```
+mvn clean scala:compile compile package
+```
+in the above command, add `scala:compile` before `compile` when packaging, if not do this, maven will not
+packages any scala module.
+
 This command may generate two jar files `data-adapter-x.x.jar` 
 and `data-adapter-x.x.jar.original`. The latter is original jar
 file and the former is additionally use `com.qianzhan.qichamao.app.Application`

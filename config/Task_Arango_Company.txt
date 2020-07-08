@@ -1,6 +1,6 @@
 state=1
-
-// 1: test; 2: publish
+use_redis=1
+# 1: test; 2: publish
 env=1
 
 # number of iterations between two printing

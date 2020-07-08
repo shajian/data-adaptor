@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.qianzhan.qichamao.dal.mybatis.CommonMapper">
+<mapper namespace="com.qcm.dal.mybatis.CommonMapper">
     <insert id="insertCheckpoint0" parameterType="string">
         INSERT INTO Counter (ct_key, ct_value) VALUES (#{key}, 0)
     </insert>
