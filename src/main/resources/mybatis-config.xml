@@ -6,7 +6,7 @@
 
     <properties resource="db.properties.private"></properties>
 <!--    switch to the following line when publish this APP -->
-<!--    <properties url="/absolute/path/to/database/configuration/properties/file"></properties>-->
+<!--    <properties url="file:///absolute/path/to/database/configuration/properties/file"></properties>-->
 
     <typeAliases>
         <typeAlias alias="company" type="com.qcm.entity.OrgCompanyList"></typeAlias>

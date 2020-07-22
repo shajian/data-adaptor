@@ -65,7 +65,7 @@ public class SubTaskComDtl extends SubTaskComBase {
                     m_com.setOc_money(dtl.od_regMoney);
                 }
                 if (a_com != null) {    // fill arango data
-                    int flag = NLP.recognizeName(dtl.od_faRen);
+                    int flag = NLP.recognizeLSM(dtl.od_faRen);
 //                    int sn = 0;
                     if (flag == 1) {    // company-type legal person
                         // try to get oc_code of this company-type legal person
@@ -101,7 +101,7 @@ public class SubTaskComDtl extends SubTaskComBase {
                             }
                         }
 
-                    } else if (flag == 2) {
+                    } else/* if (flag == 2)*/ {
                         if (GlobalConfig.getEnv() == 1) {
                             a_com.legacyPack.setLp(oc_code, new ArangoCpVD(dtl.od_faRen, oc_code, 2), false);
                         } else {

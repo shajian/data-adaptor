@@ -34,13 +34,20 @@ is located at `src/main/assembly/assembly.xml`.
 ## 3. API
 run the application directly by 
 ```
-mvn spring-boot:run
+mvn spring-boot:runy
 ```
 build the jar file
 ```
 mvn clean package
 ```
 (If want to skip unit test, add option `-Dmaven.skip.test=true` or `-DskipTests=true`)
+
+Sometimes, we want to rebuild this project itself after some source code modification, without any dependency changes,
+then do
+~~~```
+mvn compile
+```~~~
+and substitute the single new jar file.
 
 Now add scala module in this project, and to package this project, please use
 ```

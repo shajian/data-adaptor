@@ -22,6 +22,32 @@ public class NLP {
                 .enableJapaneseNameRecognize(true).enableOrganizationRecognize(true);
     }
 
+    /**
+     * recognize the type of legal person, share holder, and member of a company
+     * @param name
+     * @return
+     */
+    public static int recognizeLSM(String name) {
+        if (MiscellanyUtil.isBlank(name)) return 0;
+        if (name.length() < 4) return 2;
+        if (MiscellanyUtil.isComposedWithAscii(name)) {
+            String lowerName = name.toLowerCase();
+            if (lowerName.contains("limited")) return 1;
+            String[] segs = name.split("\\s");
+            if (segs.length < 6) {
+                for (String seg :
+                        segs) {
+                    if (seg.contains(".")) return 1;
+                }
+                return 2;
+            }
+            return 1;
+        }
+
+        if (name.contains("·") && name.length() < 16) return 2;
+
+        return recognizeName(name);
+    }
 
     /**
      * 0: unknown
@@ -32,6 +58,7 @@ public class NLP {
      */
     public static int recognizeName(String text) {
         if (MiscellanyUtil.isBlank(text) || text.length() < 2) return 0;
+
         List<Term> terms = segment.seg(text);
         boolean is_short = text.length() < 8;
         boolean person = false;

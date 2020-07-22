@@ -312,7 +312,7 @@ public abstract class ArangoBaseRepository<T> {
         if (min_depth > max_depth) min_depth = max_depth;
         ArangoDatabase db = client.db(database);
         String aql = String.format(
-                "FOR v IN %d..%d ANY '%s' GRAPH '%s' OPTIONS { bfs: true, uniqueVertices: 'global' } " +
+                "FOR v IN %d..%d ANY '%s' GRAPH '%s' OPTIONS { bfs: true, uniqueVertices: 'global' } " +// "LIMIT 10000"+
                         "RETURN v",
                 min_depth, max_depth, start_id, graphMeta.graph()
         );

@@ -5,11 +5,15 @@ import com.qcm.task.com.MainTaskEsCompany;
 import com.qcm.task.com.MainTaskMongodbCompany;
 import com.qcm.task.com.MainTaskRedisCompanyIndex;
 import com.qcm.task.stat.BrowseCount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Some {
+    private static Logger logger = LoggerFactory.getLogger(Some.class);
     public static void main(String[] args) {
         if (args.length == 0 ||
             args.length == 0 && args[0] == "--help") {
+            logger.error("no argument is given");
             System.out.println(getHelpInfo());
             return;
         }

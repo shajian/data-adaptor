@@ -31,6 +31,7 @@ public class Test {
 //        logger.info("test info message.");
 //        md5();
         CallTest.sayHello("scala");
+        logger.error("error message");
     }
 
 

@@ -57,7 +57,7 @@ public class SubTaskComMember extends SubTaskComBase {
                         }
                         occupy = String.join(",", set);
                     }
-                    int flag = NLP.recognizeName(name);
+                    int flag = NLP.recognizeLSM(name);
 
                     if (flag == 1) {    // company-type senior member
                         List<String> codeAreas = ComUtil.getCodeAreas(name);
@@ -90,7 +90,7 @@ public class SubTaskComMember extends SubTaskComBase {
                             }
                         }
 
-                    } else if (flag == 2) {  // natural person typed senior member
+                    } else /*if (flag == 2)*/ {  // natural person typed senior member
                         if (GlobalConfig.getEnv() == 1) {
                             compack.arango.legacyPack.setMember(oc_code, new ArangoCpVD(name, oc_code, 2), occupy, dist, false);
                         } else {

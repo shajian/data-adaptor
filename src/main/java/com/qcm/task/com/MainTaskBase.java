@@ -80,9 +80,14 @@ public abstract class MainTaskBase {
     public void start() {
         try {
             exec_state();
+            if (pool != null) {
+                //
+                pool.shutdown();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     protected void state1_pre() throws Exception { }
@@ -147,6 +152,7 @@ public abstract class MainTaskBase {
         } else if (state == 6) {
             state6_post();
         }
+
     }
 
     private void state_main() throws Exception {
@@ -195,7 +201,10 @@ public abstract class MainTaskBase {
             if (!notice) {
                 // if has not received notice, wait for another 2s
                 System.out.println("app will exit after 5s");
-                Thread.sleep(5000);
+                Thread.sleep(10000);
+            }
+            if (pool != null) {
+                pool.shutdown();
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

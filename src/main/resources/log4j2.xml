@@ -5,6 +5,7 @@
         <Property name="logFile">xxx.log</Property>
         <Property name="test.logDir">log/test</Property>
         <Property name="test.logFile">xxx.log</Property>
+        <Property name="async.logDir">log/async</Property>
         <Property name="mail.subject">data-adaptor logging</Property>
         <Property name="mail.from">xxxxxxxx1@qq.com</Property>
         <Property name="mail.to">xxxxxxxxx2@qq.com</Property>
@@ -19,7 +20,15 @@
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n"/>
         </Console>
 
-        <File name="com.qcm.test.CallTest" fileName="${test.logDir}/${test.logFile}" append="false">
+        <File name="File" fileName="${test.logDir}/${test.logFile}" append="false">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n" />
+        </File>
+
+        <File name="AsyncFile" fileName="${async.logDir}/${test.logFile}" append="false" immediateFlush="false">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n" />
+        </File>
+
+        <File name="InnerFile" fileName="${async.logDir}/${test.logFile}" append="false" immediateFlush="false">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n" />
         </File>
 
@@ -29,9 +38,15 @@
 <!--            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n" />-->
 <!--        </SMTP>-->
 
+        <Async name="Async">
+            <bufferSize>8192</bufferSize>
+            <blocking>false</blocking>
+            <AppenderRef ref="InnerFile" />
+<!--            <AppenderRef ref="RollingFile" />-->
+        </Async>
         <RollingFile name="RollingFile" fileName="${logDir}/${logFile}"
                      filePattern="${logDir}/$${date:yyyy-MM}/app-%d{yyyyMMddHHmmssSSS}.log.gz">
-            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY" />
+            <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY" />
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS z} %-5level %class{36} %L %M - %msg%xEx%n" />
             <Policies>
                 <SizeBasedTriggeringPolicy size="10MB" />
@@ -50,7 +65,17 @@
         <Logger name="com.qcm.app.Test" level="info" additivity="false">
             <AppenderRef ref="Console" />
         </Logger>
-        <Root level="error">
+        <Logger name="[package name]" level="info">
+            <AppenderRef ref="Async" />
+        </Logger>
+        <AsyncLogger name="demo" level="info">
+<!--                     includeLocation="true"-->
+            <!-- By default, location(includes class/method/line/etc. info) is not passed to
+            the I/O thread by asynchronous loggers -->
+
+            <AppenderRef ref="AsyncFile" />
+        </AsyncLogger>
+        <Root level="info">
             <AppenderRef ref="RollingFile" />
 <!--            <AppenderRef ref="Mail" />-->
         </Root>

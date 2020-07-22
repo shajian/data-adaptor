@@ -8,6 +8,7 @@ import com.qcm.dal.arangodb.ArangoBusinessRepository;
 import com.qcm.dal.arangodb.ArangoInterveneRepository;
 import com.qcm.dal.mybatis.MybatisClient;
 import com.qcm.entity.OrgCompanyList;
+import com.qcm.test.com.qcm.utils.IO;
 import com.qcm.util.DbConfigBus;
 import com.qcm.util.MiscellanyUtil;
 import com.qcm.util.parallel.Master;
@@ -16,6 +17,7 @@ import com.qcm.graph.ArangoBusinessPack;
 import com.qcm.graph.ArangoBusinessPerson;
 import com.qcm.graph.ArangoWriter;
 
+import java.io.*;
 import java.util.*;
 import java.util.function.Function;
 
@@ -74,7 +76,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
      *  and then multi-threadly read legal person, share holder and senior member
      *  but, only insert/insert legal person, share holder and senior member into Arangodb.
      *
-     *  checkpoint: 142248249
+     *  checkpoint: 146551867
      * @return
      * @throws Exception
      */
@@ -135,29 +137,17 @@ public class MainTaskArangodbCompany extends MainTaskBase {
         if (companies.size() == 0) return false;
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
 
-        for (OrgCompanyList company : companies) {
-            if (company.oc_id > checkpoint) checkpoint = company.oc_id;
-
-            if (!validateCode(company.oc_code)) continue;
-            String area = company.oc_area;
-            if (area.startsWith("71") || area.startsWith("81") || area.startsWith("82")) {
-                continue;
-            }
-            company.oc_name = company.oc_name.trim();
-            if (filter_out(company.oc_name)) continue;
-
-            ArangoBusinessCompany fakeCom = new ArangoBusinessCompany(company.oc_name);
-            BaseDocument old = business.get(fakeCom.getId());
-            if (old != null) {
-                business.merge(fakeCom.getId(), ArangoBusinessCompany.toId(company.oc_code), false);
-            }
-        }
-        if (checkpoint > 99648083) return false;
         return true;
     }
+
+
+    // there are some companies that invest huge amount of child-companies, I take these companies(and their clusters)
+    //  as dirty cases and skip to handle them temporarily. At last, I will specially handle them arbitrarily.
+    private Set<String> dirtyHacks = new HashSet<String>();
     protected void state4_pre() throws Exception {
         path_thre = config.getInt("path_thre", 3);
         max_traverse_depth = config.getInt("max_traverse_depth", path_thre);
+        System.out.println("max_traverse_depth: "+max_traverse_depth);
         if (config.getInt("use_redis", 0) == 0) {
             trivials = new HashSet<>();
         } else {
@@ -167,7 +157,25 @@ public class MainTaskArangodbCompany extends MainTaskBase {
             } else if ((db= DbConfigBus.getDbConfig_i("redis.db.temp", 0)) > 0) {
                 redis_temp_db = db;
             }
-            trivials = RedisClient.smembers(trivial_key);
+            trivials = RedisClient.smembers(trivial_key, redis_temp_db);
+        }
+
+        // load dirty hacked company codes
+        try {
+            File f = new File("config/Task_Arango_Company_DirtyHacks.txt");
+            BufferedReader br = new BufferedReader(new FileReader(f));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                dirtyHacks.add(line);
+            }
+            br.close();
+            System.out.println(String.format("%d company codes loaded.", dirtyHacks.size()));
+            for (String code :
+                    dirtyHacks) {
+                System.out.println(code);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -221,6 +229,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
 //            System.out.println(String.format("%d edges by contact will be removed.", toRemoved.size()));
 //            client.bulkDelete_ED(toRemoved);
 //        }
+        if (checkpoint>= 146447067) return false;
         return true;
     }
 
@@ -282,6 +291,12 @@ public class MainTaskArangodbCompany extends MainTaskBase {
     private Set<String> trivials;
     private int redis_temp_db = 9;
     private String trivial_key = "graph-trivials";  // cache these trivials into Redis
+
+
+//    {{
+//        add("MA1MCM899");
+//    }};
+
     /**
      * combine two vertices with a same name
      * @param code oc_code of a vertex in a chain
@@ -290,13 +305,32 @@ public class MainTaskArangodbCompany extends MainTaskBase {
         ArangoInterveneRepository intervene = ArangoInterveneRepository.singleton();
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
         // because there may be many vertices connect to the code vertex, so we set max_deep=2 here
-        List<BaseDocument> vertices = business.connectedGraph(ArangoBusinessCompany.toId(code), 2);
+        List<BaseEdgeDocument> fromEdges = business.neighbours(ArangoBusinessCompany.toId(code), 2);
+        boolean noPersonFlag = true;        // company that has no person vertex connected.
+        boolean dirty = false;
+        for (BaseEdgeDocument edge:
+                fromEdges) {
+            if (edge.getFrom().startsWith(ArangoBusinessPerson.collection)) {
+                noPersonFlag = false;
+            }
+            String key = edge.getFrom().substring(ArangoBusinessCompany.collection.length()+1);
+            if (dirtyHacks.contains(key)) {
+                dirty = true;   // if check out a dirty cluster center, then mark it and return directly.
+            }
+        }
+        if (noPersonFlag || dirty) {
+//            System.out.println(String.format(
+//                    "company %s is skipped. dirty: %b, noPersonFlag: %b", code, dirty, noPersonFlag));
+            return;
+        }
+
+        List<BaseDocument> vertices = business.connectedGraph(ArangoBusinessCompany.toId(code), max_traverse_depth);
         if (MiscellanyUtil.isArrayEmpty(vertices)) return;
         int graphSize = vertices.size();
 
         // key: company vertex id, value: its all neighbours
         Map<String, Set<String>> companyWithNeighbours = new HashMap<>();
-        if (graphSize > 12000) {
+        if (graphSize > 8000) {
             List<String> toIds = new ArrayList<>();     // collect all company-vertices
             for (BaseDocument vertex : vertices) {      // traverse all vertices on this graph
                 if (vertex == null) continue;
@@ -340,8 +374,11 @@ public class MainTaskArangodbCompany extends MainTaskBase {
         // group vertex ids by personal name(actually name_md5)
         Map<String, List<BaseDocument>> groups = new HashMap<>(); // keep all natural persons and unknown companies
         int personNum = 0;      // number of all person vertices
+
         for (BaseDocument vertex : vertices) {
             if (vertex == null) continue;
+
+
             // exclude the vertex that will be handled later
             for (Set<String> neighbours : companyWithNeighbours.values()) {
                 neighbours.remove(vertex.getId());  //

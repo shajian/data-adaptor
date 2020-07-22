@@ -69,7 +69,7 @@ public class SubTaskComShareHolder extends SubTaskComBase {
             if (compack.arango != null) {
                 int dist = ComUtil.edgeLength(map.size());
                 for (String key : map.keySet()) {       // key: share holder's name
-                    int flag = NLP.recognizeName(key);
+                    int flag = NLP.recognizeLSM(key);
                     double money = map.get(key);
                     float ratio = (float)(total_money > 0 ? money/total_money : 0);
                     if (flag == 1) {    // company-type senior member
@@ -102,7 +102,7 @@ public class SubTaskComShareHolder extends SubTaskComBase {
                             }
                         }
 
-                    } else if (flag == 2) {
+                    } else/* if (flag == 2)*/ {
                         if (GlobalConfig.getEnv() == 1) {
                             compack.arango.legacyPack.setShare_holder(oc_code, new ArangoCpVD(key, oc_code, 2), money, ratio, dist, false);
                         } else {

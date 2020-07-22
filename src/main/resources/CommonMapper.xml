@@ -8,11 +8,11 @@
     </insert>
 
     <insert id="insertCheckpoint" parameterType="string">
-        INSERT INTO Counter (ct_key, ct_value) VALUES (#{key}, #{value})
+        INSERT INTO Counter (ct_key, ct_value) VALUES ('${key}', ${value})
     </insert>
 
     <update id="updateCheckpoint">
-        UPDATE Counter SET ct_value = #{value} WHERE ct_key = #{key};
+        UPDATE Counter SET ct_value = ${value} WHERE ct_key = '${key}';
     </update>
 
     <select id="getCheckpoint" parameterType="string" resultType="int">
