@@ -8,6 +8,7 @@ import java.util.Map;
 
 public interface ComMapper {
     List<OrgCompanyList> getCompanies(@Param("start") int start, @Param("count") int count);
+    OrgCompanyList getCompany(String oc_code);
     List<OrgCompanyDimBatch> getCompanyDtls(@Param("start") int start, @Param("count") int count);
     OrgCompanyDtl getCompanyDtl(String oc_code);
     List<OrgCompanyDtlMgr> getCompanyMembers(String oc_code);
@@ -38,4 +39,5 @@ public interface ComMapper {
     List<OrgCompanyContact> getCompanyContactBatch(@Param("start") int start, @Param("count") int count);
 
     List<Map<String, Object>> selectMany(String sql);
+    List<OrgCompanyUpdateMeta> getCompanyUpdateMeta(@Param("start") int start, @Param("count") int count);
 }

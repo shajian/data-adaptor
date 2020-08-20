@@ -47,6 +47,19 @@ public class ArangoBusinessRelation {
     private String position;
 
     private ArangoBusinessRelation() { }
+    public ArangoBusinessRelation(String from, String to, int type) {
+        String prefix = "lp";
+        if (type == 2) prefix = "sh";
+        else if (type == 3) prefix = "sm";
+        String to1 = to.split("/")[1];
+        String from1 = to.split("/")[1];
+
+        this.from = from;
+        this.to = to;
+        this.key = prefix+from1+to1;
+        this.type = type;
+        this.id = String.format("%s/%s", collection, this.key);
+    }
     public ArangoBusinessRelation(String from, String to, String key, int type) {
         this.from = from;
         this.to = to;

@@ -4,18 +4,15 @@ import com.arangodb.entity.BaseDocument;
 import com.arangodb.entity.BaseEdgeDocument;
 import com.qcm.config.GlobalConfig;
 import com.qcm.dal.RedisClient;
+import com.qcm.dal.arangodb.ArangoBaseRepository;
 import com.qcm.dal.arangodb.ArangoBusinessRepository;
 import com.qcm.dal.arangodb.ArangoInterveneRepository;
 import com.qcm.dal.mybatis.MybatisClient;
-import com.qcm.entity.OrgCompanyList;
-import com.qcm.test.com.qcm.utils.IO;
+import com.qcm.entity.*;
+import com.qcm.graph.*;
 import com.qcm.util.DbConfigBus;
 import com.qcm.util.MiscellanyUtil;
 import com.qcm.util.parallel.Master;
-import com.qcm.graph.ArangoBusinessCompany;
-import com.qcm.graph.ArangoBusinessPack;
-import com.qcm.graph.ArangoBusinessPerson;
-import com.qcm.graph.ArangoWriter;
 
 import java.io.*;
 import java.util.*;
@@ -36,13 +33,16 @@ public class MainTaskArangodbCompany extends MainTaskBase {
     private int lp_sh_sm;
 
 
+    public void insert(boolean overwrite) {
+        insert_static(this.task, overwrite);
+    }
     public void insert() {
-        insert_static(this.task);
+        insert_static(this.task, true);
     }
 
-    public static void insert_static(TaskType task) {
+    public static void insert_static(TaskType task, boolean overwrite) {
         try {
-            ArangoWriter.insert(SharedData.getBatch(task));
+            ArangoWriter.insert(SharedData.getBatch(task), overwrite);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -137,6 +137,36 @@ public class MainTaskArangodbCompany extends MainTaskBase {
         if (companies.size() == 0) return false;
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
 
+        Map<String, ArangoBusinessCompany> codes = new HashMap<>();
+        for (OrgCompanyList company :
+                companies) {
+            if (company.oc_id > checkpoint) checkpoint = company.oc_id;
+            codes.put(company.oc_code, new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area));
+        }
+        // get all vertices via codes
+        Collection<BaseDocument> docs = business.get(ArangoBusinessCompany.collection, codes.keySet());
+        if (docs == null) return true;
+        for (BaseDocument doc : docs) {
+            codes.remove(doc.getKey());     // remove those had been saved in arangodb
+        }
+        if (codes.size() > 0) {             // those docs not existed in arangodb
+            SubTaskComBase.resetLatch(task, codes.size()*3);
+            for (String code : codes.keySet()) {
+                SharedData.open(task);
+                ComPack cp = SharedData.get(task);
+                ArangoBusinessPack a_com = cp.arango;
+                a_com.com = codes.get(code).to();
+                pool.execute(new SubTaskComDtl(task));
+                pool.execute(new SubTaskComMember(task));
+                pool.execute(new SubTaskComShareHolder(task));
+                SharedData.close(task);
+            }
+            while(SubTaskComBase.getLatch(task).getCount() > 0) {
+                Thread.sleep(30);
+            }
+            insert(false);
+        }
+        if (checkpoint>= 146407862) return false;
         return true;
     }
 
@@ -182,7 +212,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
 
     /**
      * combine vertices with a same name
-     * checkpoint: 99648083. Because some companies are not saved in Redis, so many vertices is not a completed company
+     * checkpoint: 146447862. Because some companies are not saved in Redis, so many vertices is not a completed company
      *  vertices.
      * @return
      * @throws Exception
@@ -229,7 +259,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
 //            System.out.println(String.format("%d edges by contact will be removed.", toRemoved.size()));
 //            client.bulkDelete_ED(toRemoved);
 //        }
-        if (checkpoint>= 146447067) return false;
+//        if (checkpoint>= 146447067) return false;
         return true;
     }
 
@@ -298,14 +328,231 @@ public class MainTaskArangodbCompany extends MainTaskBase {
 //    }};
 
     /**
+     * before combination, do some simple filtering
+     * 1. if this company has no person vertex connected
+     * 2. if this company connects to a vertex that is too `dirty`(degree > 1E5)
+     * @param code
+     * @return if false, subsequent combination is not needed
+     * @throws Exception
+     */
+    private boolean combine_SimpleFilter(String code) throws Exception {
+        ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
+
+        List<BaseEdgeDocument> froms = business.neighbours(ArangoBusinessCompany.toId(code), ArangoBaseRepository.InOut.in);
+
+        boolean noPerson = true;
+        boolean dirty = false;
+        for (BaseEdgeDocument from : froms) {
+            String fromId = from.getId();
+            if (fromId.startsWith(ArangoBusinessPerson.collection)) noPerson = false;
+            if (dirtyHacks.contains(from.getKey())) dirty = true;
+        }
+        if (noPerson || dirty) return false;
+        return true;
+    }
+
+    /**
+     *
+     * @param vs all vertices in a cluster
+     * @return outliers: all person typed vertices that connected by company typed vertices
+     *          but are out of this cluster
+     * @throws Exception
+     */
+    private Map<String, Set<String>> outlierPersonNeighbourGroupsByCompany(List<BaseDocument> vs) throws Exception {
+        // key: company vertex id, value: its all neighbours
+        ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
+        Map<String, Set<String>> outlierPersonNeighbourGroups = new HashMap<>();
+        List<String> toIds = new ArrayList<>();     // collect all company-vertices
+        Set<String> personVertexIds = new HashSet<>();
+        for (BaseDocument v : vs) {
+            if (v.getId().startsWith(ArangoBusinessPerson.collection)) personVertexIds.add(v.getId());
+        }
+
+        for (BaseDocument v : vs) {
+            if (v == null) continue;
+            if (v.getKey().length() == 9) toIds.add(v.getId()); // collect company typed vertices
+
+            if (toIds.size() > 256) {
+                List<BaseEdgeDocument> edges = business.searchByTos(toIds);
+                for (BaseEdgeDocument edge : edges) {
+                    if (edge == null) continue;
+                    Set<String> group = outlierPersonNeighbourGroups.get(edge.getTo());
+                    if (group == null) {            // even a company vertex has no outlier-person-vertex connected,
+                        group = new HashSet<>();    //  we still build a group for it
+                        outlierPersonNeighbourGroups.put(edge.getTo(), group);
+                    }
+
+                    String from = edge.getFrom();
+                    if (from.startsWith(ArangoBusinessCompany.collection)) continue;
+                    if (personVertexIds.contains(from)) continue;       // collect only outliers
+                    group.add(from);            // collect its neighbours
+                }
+                toIds.clear();
+            }
+        }
+        if (toIds.size() > 0) {
+            List<BaseEdgeDocument> edges = business.searchByTos(toIds);
+            for (BaseEdgeDocument edge : edges) {
+                if (edge == null) continue;
+
+                Set<String> group = outlierPersonNeighbourGroups.get(edge.getTo());
+                if (group == null) {
+                    group = new HashSet<>();
+                    outlierPersonNeighbourGroups.put(edge.getTo(), group);
+                }
+                String from = edge.getFrom();
+                if (from.startsWith(ArangoBusinessCompany.collection)) continue;
+                if (personVertexIds.contains(from)) continue;       // collect only outliers
+
+                group.add(from);
+            }
+        }
+        return outlierPersonNeighbourGroups;
+    }
+
+    /**
+     *
+     * @param record_id id in database of current company that is now being handled with
+     * @param outlierPersonNeighbourGroups
+     */
+    private void addTrivials(int record_id, Map<String, Set<String>> outlierPersonNeighbourGroups) {
+        // check out those companies whose all neighbours are already included in this current
+        //  connected graph represented by `vertices`.
+        //  Those companies have no vertices to be merged after current merging, so in subsequent iterations,
+        //  if meet those companies again, we can skip them directly for efficiency.
+        StringBuilder existing_sql = new StringBuilder();
+        HashSet<String> temp_add = new HashSet<>();
+        HashSet<String> temp_rem = new HashSet<>();
+        for (String key : outlierPersonNeighbourGroups.keySet()) {
+            if (outlierPersonNeighbourGroups.get(key).size() == 0) {
+                String trivial = key.split("/")[1];
+                if (existing_sql.length() == 0) {
+                    existing_sql.append("select oc_id, oc_code from OrgCompanyList where oc_code in ('")
+                            .append(trivial).append("'");
+                } else {
+                    existing_sql.append(", '").append(trivial).append("'");
+                }
+
+                if (existing_sql.length() > 5000) {
+                    existing_sql.append(")");
+                    List<Map<String, Object>> docs = MybatisClient.selectMany(existing_sql.toString());
+
+                    for (Map<String, Object> doc : docs) {
+                        Integer oc_id = (Integer) doc.get("oc_id");
+                        String oc_code = (String) doc.get("oc_code");
+                        if (oc_id != null) {
+                            int id = oc_id;
+                            if (id < record_id) {
+                                trivials.remove(oc_code);   // company with id `id` had been handled over early.
+                                temp_rem.add(oc_code);
+                            } else {
+                                trivials.add(oc_code);      // add company in trivials that in future when we meet
+                                temp_add.add(oc_code);      //  it again, we will skip it instead of do combining
+                            }
+                        }
+                    }
+                    existing_sql.delete(0, existing_sql.length());
+                }
+            }
+        }
+        if (existing_sql.length() > 0) {
+            existing_sql.append(")");
+            List<Map<String, Object>> docs = MybatisClient.selectMany(existing_sql.toString());
+            for (Map<String, Object> doc : docs) {
+                Integer oc_id = (Integer) doc.get("oc_id");
+                String oc_code = (String) doc.get("oc_code");
+                if (oc_id != null) {
+                    int id = oc_id;
+                    if (id < record_id) {
+                        trivials.remove(oc_code);
+                        temp_rem.add(oc_code);
+                    } else {
+                        trivials.add(oc_code);
+                        temp_add.add(oc_code);
+                    }
+                }
+            }
+        }
+        if (temp_add.size() > 0) {
+            String[] adds = temp_add.toArray(new String[1]);
+            RedisClient.sadd(redis_temp_db, trivial_key, adds);
+        }
+        if (temp_rem.size() > 0) {
+            String[] rems = temp_rem.toArray(new String[1]);
+            RedisClient.srem(redis_temp_db, trivial_key, rems);
+        }
+    }
+
+    private void combine(String code, int record_id) throws Exception {
+        ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
+        List<BaseDocument> vertices = business.cluster(ArangoBusinessCompany.toId(code), max_traverse_depth);
+        if (MiscellanyUtil.isArrayEmpty(vertices)) return;
+        int clusterSize = vertices.size();
+
+
+        if (record_id > 0) {
+            if (clusterSize > 8000) {
+                // key: company vertex id, value: its all neighbours.
+                // Statistics all companies with their own neighbours in this cluster
+                Map<String, Set<String>> outlierPersonNeighbourGroups = outlierPersonNeighbourGroupsByCompany(vertices);
+                addTrivials(record_id, outlierPersonNeighbourGroups);
+            }
+        }
+
+        // after get all _from of `code` and directly connected companies of code
+        // group vertex ids by personal name(actually name_md5)
+        // key: name_md5, value: person typed vertices share the same name
+        Map<String, List<BaseDocument>> groups = new HashMap<>(); // keep all natural persons and unknown companies
+
+        for (BaseDocument vertex : vertices) {
+            if (vertex == null) continue;
+
+            String key = vertex.getKey();   //.split("/")[1];
+            if (key.length() <= 9) continue;    // company-type node, do not need to merge vertex, skip
+            if (GlobalConfig.getEnv() == 2 && vertex.getId().startsWith(ArangoBusinessCompany.collection)) continue;
+
+            String name_md5 = key.substring(9);
+            List<BaseDocument> group = groups.get(name_md5);
+            if (group == null) {
+                group = new ArrayList<>();
+                groups.put(name_md5, group);
+            }
+            group.add(vertex);  // person vertices which share a same person name
+        }
+
+
+
+        // key: oc_code, value: it's all person vertex's id
+        Map<String, Set<String>> intervenes = new HashMap<>();
+
+        for (String name_md5 : groups.keySet()) {
+            List<BaseDocument> group = groups.get(name_md5);
+            if (group.size() == 1) continue;    // no more than 2 person shares the same name, skip
+
+            // can we directly combine a group since they all share a same person name?
+            // YES, we can because here the max depth of traversing is 2 which has met the lower limit,
+            //  however, it deserves to note the existence of intervene.
+            //  To this end, the intervene hasn't been started for using, so just combine them directly temporarily
+            String new_from_id = null;
+            List<String> old_from_ids = new ArrayList<>();
+            for (BaseDocument doc : group) {
+                if (new_from_id == null) new_from_id = doc.getId();
+                else old_from_ids.add(doc.getId());
+            }
+
+            business.merge(old_from_ids, new_from_id, false);
+        }
+    }
+    /**
      * combine two vertices with a same name
      * @param code oc_code of a vertex in a chain
      */
-    private void combine(String code, int idx) throws Exception {
+    @Deprecated
+    private void combine_1(String code, int idx) throws Exception {
         ArangoInterveneRepository intervene = ArangoInterveneRepository.singleton();
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
         // because there may be many vertices connect to the code vertex, so we set max_deep=2 here
-        List<BaseEdgeDocument> fromEdges = business.neighbours(ArangoBusinessCompany.toId(code), 2);
+        List<BaseEdgeDocument> fromEdges = business.neighbours(ArangoBusinessCompany.toId(code), ArangoBaseRepository.InOut.in);
         boolean noPersonFlag = true;        // company that has no person vertex connected.
         boolean dirty = false;
         for (BaseEdgeDocument edge:
@@ -324,7 +571,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
             return;
         }
 
-        List<BaseDocument> vertices = business.connectedGraph(ArangoBusinessCompany.toId(code), max_traverse_depth);
+        List<BaseDocument> vertices = business.cluster(ArangoBusinessCompany.toId(code), max_traverse_depth);
         if (MiscellanyUtil.isArrayEmpty(vertices)) return;
         int graphSize = vertices.size();
 
@@ -349,7 +596,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
                             group = new HashSet<>();
                             companyWithNeighbours.put(edge.getTo(), group);
                         }
-                        group.add(from);
+                        group.add(from);            // collect its neighbours
                     }
                     toIds.clear();
                 }
@@ -372,6 +619,7 @@ public class MainTaskArangodbCompany extends MainTaskBase {
 
         // after get all _from of `code` and directly connected companies of code
         // group vertex ids by personal name(actually name_md5)
+        // key: name_md5, value: person typed vertices share the same name
         Map<String, List<BaseDocument>> groups = new HashMap<>(); // keep all natural persons and unknown companies
         int personNum = 0;      // number of all person vertices
 
@@ -571,44 +819,262 @@ public class MainTaskArangodbCompany extends MainTaskBase {
     protected boolean state2_inner() throws Exception {
         // todo update ArangoDB `company-person-relation`
         // pop data from synchronized table
-        List<OrgCompanyList> companies = new ArrayList<>();
+        List<OrgCompanyUpdateMeta> metas = MybatisClient.getCompanyUpdateMeta(checkpoint, batch);
 
-        if (companies.size() == 0) return false;
+        if (metas.size() == 0) return false;
 
-        SubTaskComBase.resetLatch(task, batch*3);
-        int count = 0;
-        for (OrgCompanyList company : companies) {
-            if (!validateCode(company.oc_code)) continue;
-
-            company.oc_name = company.oc_name.trim();
-            if (filter_out(company.oc_name)) continue;
-
-            SharedData.open(task);
-            ComPack cp = SharedData.get(task);
-
-            ArangoBusinessPack a_com = cp.arango;
-            a_com.oc_code = company.oc_code;
-            a_com.oc_area = company.oc_area;
-//            arango.com = new ArangoBusinessCompany(company.oc_code, company.oc_name, company.oc_area);
-
-            //
-            pool.execute(new SubTaskComDtl(task));
-            pool.execute(new SubTaskComMember(task));
-            pool.execute(new SubTaskComShareHolder(task));
-//            pool.execute(new SubTaskComContact(task));
-
-            SharedData.close(task);
-            count++;
+        Set<String> uniques = new HashSet<>();
+        List<OrgCompanyUpdateMeta> newMetas = new ArrayList<>();
+        for (OrgCompanyUpdateMeta meta : metas) {       // remove redundant records that will be updated
+            String u = meta.table_name+meta.field_names+meta.field_values;
+            if (!uniques.contains(u)) {
+                uniques.add(u);
+                newMetas.add(meta);
+            }
         }
-        // wait for all sub-tasks finishing
-        int diff = (batch-count)*3;
-        while(SubTaskComBase.getLatch(task).getCount() != diff) {
-            Thread.sleep(100);
+        // update `name` and `area`(via overwriting them directly)
+        metas = state2_inner_info_overwrite(newMetas);
+
+        // collect all other fields that influence corresponding relation edges
+        Map<String, ArangoBusinessCompanyDiff> diffs = state2_inner_collect_new_LPSHSM(metas);
+
+        // collect old infos
+        state2_inner_fill_old_LPSHSM(diffs);
+
+        // do differentiation
+        for (String code : diffs.keySet()) {
+            state2_inner_update_LPSHSM(diffs.get(code));
         }
 
-        ArangoWriter.update(SharedData.getBatch(task));
         return true;
     }
+
+/**
+ * // search the legal person of this company from arangodb
+ *                     String md5 = Cryptor.md5(c.od_faRen);
+ *                     List<BaseEdgeDocument> edges = business.neighbours(ArangoBusinessCompany.toId(c.od_oc_code), ArangoBaseRepository.InOut.in);
+ *                     for (BaseEdgeDocument edge : edges) {
+ *                         Long type = (Long)edge.getAttribute("type");
+ *                         if (type != null && type == 1) {        // legal person, we suppose each company has a single legal person
+ *                             if (edge.getFrom().endsWith(md5)) {
+ *                                 // legal person is not changed for this company, nothing should be done
+ *                             } else {
+ *                                 BaseDocument oldLP = business.get(edge.getFrom());
+ *                                 if (c.od_faRen.equals(oldLP.getAttribute("name"))) {
+ *                                     // keep unchanged
+ *                                 } else {
+ *                                     // if `from` vertex only connects to this company, delete it (and the relation edge) directly
+ *                                     // else, delete the relation edge, and reconnect this company to a correct vertex
+ *
+ *                                     List<BaseEdgeDocument> ns = business.neighbours(oldLP.getId(), ArangoBaseRepository.InOut.out);
+ *                                     if (ns.size() < 2) {
+ *                                         business.delete(oldLP.getId());
+ * //                                    business.delete(edge.getId());    // edge will be automatically deleted by arangodb?
+ *                                     } else {
+ *                                         // degree will not be updated here
+ * //                                        int degree = ns.size() - 1;
+ * //                                        business.execute("UPDATE {_key: '" + oldLP.getKey() + "'} WITH {degree: "
+ * //                                                + degree + "} IN " + oldLP.getId().split("/")[0]);
+ *                                         business.delete(edge.getId());
+ *                                     }
+ *                                     BaseDocument newLP = SubTaskComDtl.fromLegalPerson(c.od_oc_code, c.od_faRen);
+ *
+ *                                     boolean combined = false;
+ *                                     if (newLP.getId().startsWith(ArangoBusinessPerson.collection)) {
+ *                                         // combine vertex for this legal person
+ *                                         String thiis = (String) newLP.getAttribute("name");
+ *                                         List<BaseDocument> vertices = business.cluster(ArangoBusinessCompany.toId(c.od_oc_code), max_traverse_depth);
+ *                                         for (BaseDocument vertex : vertices) {
+ *                                             String other = (String) vertex.getAttribute("name");
+ *                                             if (other.equals(thiis)) {
+ *                                                 combined = true;
+ *                                                 newLP = vertex;
+ *                                                 break;
+ *                                             }
+ *                                         }
+ *                                     }
+ *
+ *                                     if (!combined) {
+ *                                         BaseDocument oldNewLP = business.get(newLP.getId());
+ *                                         if (oldNewLP == null) {
+ *                                             business.insert(newLP);
+ *                                         }
+ *                                     }
+ *                                     business.insert(new ArangoBusinessRelation(newLP.getId(), ArangoBusinessCompany.toId(c.od_oc_code),
+ *                                             "lp"+c.od_oc_code+newLP.getKey(), 1).to());
+ *                                 }
+ *                             }
+ *                         }
+ *                     }
+ */
+
+/**
+ * update some infos that can be directly overwrited
+     * e.g. `name` and `area` field of a vertex
+     */
+    private List<OrgCompanyUpdateMeta> state2_inner_info_overwrite(List<OrgCompanyUpdateMeta> metas) throws Exception {
+        StringBuilder sb = new StringBuilder();
+        List<OrgCompanyUpdateMeta> newMetas = new ArrayList<>();
+        ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
+        for (OrgCompanyUpdateMeta meta : metas) {
+            if ("OrgCompanyList".equals(meta.table_name)) {
+                if ("oc_code".equals(meta.field_names)) {
+                    OrgCompanyList c = MybatisClient.getCompany(meta.field_values);
+                    // only area and name should be checked
+                    if (sb.length() == 0) {
+                        sb.append("LET entities = [{_key: '");
+                        sb.append(c.oc_code).append("', a: '").append(c.oc_area).append("', n: '")
+                                .append(c.oc_name).append("'}");
+                    } else {
+                        sb.append(", {_key: '").append(c.oc_code).append("', a: '").append(c.oc_area)
+                                .append("', n: '").append(c.oc_name).append("'}");
+                    }
+                }
+            } else {
+                newMetas.add(meta);
+            }
+        }
+        if (sb.length() > 0) {
+            sb.append("]\nFOR v in entities UPDATE v WITH {area: v.a, name: v.n} IN ")
+                    .append(ArangoBusinessCompany.collection).append(" RETURN NEW");
+            String aql = sb.toString();
+            try {
+                business.execute(aql);
+            } catch (Exception e) {
+                // todo log
+            }
+        }
+        return newMetas;
+    }
+
+    private Map<String, ArangoBusinessCompanyDiff> state2_inner_collect_new_LPSHSM(List<OrgCompanyUpdateMeta> metas) {
+        Map<String, ArangoBusinessCompanyDiff> updateInfos = new HashMap<>();
+        for (OrgCompanyUpdateMeta meta : metas) {
+            String code = meta.field_values;
+            ArangoBusinessCompanyDiff info = updateInfos.get(code);
+            if (info == null) {
+                info = new ArangoBusinessCompanyDiff();
+                info.code = code;
+                updateInfos.put(code, info);
+            }
+
+            if (meta.table_name == "OrgCompanyDtl") {
+                OrgCompanyDtl c = MybatisClient.getCompanyDtl(meta.field_values);
+                info.newLP = new ArangoBusinessCompanyLPInfo(c.od_faRen.trim());
+            } else if (meta.table_name.startsWith("OrgCompanyGsxtDtlMgr_")) {
+                List<OrgCompanyDtlMgr> mgrs = MybatisClient.getCompanyMembersGsxt(meta.field_values, meta.table_name.split("_")[1]);
+                if (info.newSMs == null) info.newSMs = new HashMap<>();
+                for (OrgCompanyDtlMgr m : mgrs) {
+                    if (MiscellanyUtil.isBlank(m.om_name) || m.om_status == 4) continue;
+                    m.om_name = m.om_name.trim();
+                    ArangoBusinessCompanySMInfo sm = info.newSMs.get(m.om_name);
+                    if (sm == null) {
+                        sm = new ArangoBusinessCompanySMInfo(m.om_name);
+                        info.newSMs.put(m.om_name, sm);
+                    }
+                    sm.occupations.add(m.om_position);
+                }
+            } else if (meta.table_name.startsWith("OrgCompanyGsxtDtlGD_")) {
+                List<OrgCompanyGsxtDtlGD> gds = MybatisClient.getCompanyGDsGsxt(meta.field_values, meta.table_name.split("_")[1]);
+                if (info.newSHs == null) info.newSHs = new HashMap<>();
+                for (OrgCompanyGsxtDtlGD gd : gds) {
+                    if (MiscellanyUtil.isBlank(gd.og_name) || gd.og_status == 4) continue;
+                    gd.og_name = gd.og_name.trim();
+                    ArangoBusinessCompanySHInfo sh = info.newSHs.get(gd.og_name);
+                    if (sh == null) {
+                        sh = new ArangoBusinessCompanySHInfo(gd.og_name);
+                        info.newSHs.put(gd.og_name, sh);
+                    }
+                    sh.money += gd.og_subscribeAccount;
+                }
+            } else if (meta.table_name.equals("OrgCompanyDtlGD")) {
+                List<OrgCompanyDtlGD> gds = MybatisClient.getCompanyGDs(meta.field_values);
+                if (info.newSHs == null) info.newSHs = new HashMap<>();
+                for (OrgCompanyDtlGD gd : gds) {
+                    if (MiscellanyUtil.isBlank(gd.og_name)) continue;
+                    gd.og_name = gd.og_name.trim();
+                    ArangoBusinessCompanySHInfo sh = info.newSHs.get(gd.og_name);
+                    if (sh == null) {
+                        sh = new ArangoBusinessCompanySHInfo(gd.og_name);
+                        info.newSHs.put(gd.og_name, sh);
+                    }
+                    sh.money += gd.og_money;
+                }
+            } else if (meta.table_name.equals("OrgCompanyDtlMgr")) {
+                List<OrgCompanyDtlMgr> mgrs = MybatisClient.getCompanyMembers(meta.field_values);
+                if (info.newSMs == null) info.newSMs = new HashMap<>();
+                for (OrgCompanyDtlMgr m : mgrs) {
+                    if (MiscellanyUtil.isBlank(m.om_name) || m.om_status == 4) continue;
+                    m.om_name = m.om_name.trim();
+                    ArangoBusinessCompanySMInfo sm = info.newSMs.get(m.om_name);
+                    if (sm == null) {
+                        sm = new ArangoBusinessCompanySMInfo(m.om_name);
+                        info.newSMs.put(m.om_name, sm);
+                    }
+                    sm.occupations.add(m.om_position);
+                }
+            }
+        }
+        return updateInfos;
+    }
+
+    private void state2_inner_fill_old_LPSHSM(Map<String, ArangoBusinessCompanyDiff> infos) throws Exception {
+        ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
+        for (String code : infos.keySet()) {
+            List<ArangoRay> relations = business.oneStepRelation(ArangoBusinessCompany.toId(code), ArangoBaseRepository.InOut.in);
+            ArangoBusinessCompanyDiff info = infos.get(code);
+            for (ArangoRay r : relations) {
+                BaseEdgeDocument e = r.edge;
+                assert e.getTo() == ArangoBusinessCompany.toId(code) : String.format("wrong edge: %s -> %s", e.getFrom(), e.getTo());
+                Long type = (Long) e.getAttribute("type");
+                assert type != null : String.format("edge %s has unknown type", e.getId());
+                String name = (String) e.getAttribute("name");
+                if (type == 1) {
+                    info.oldLP = new ArangoBusinessCompanyLPInfo(name, r.vertex.getId(), e.getId());
+                } else if (type == 2) { // share holder
+                    ArangoBusinessCompanySHInfo sh = new ArangoBusinessCompanySHInfo(name, r.vertex.getId(), e.getId());
+                    sh.money = (Double) e.getAttribute("money");
+                    info.oldSHs.put(name, sh);
+                } else if (type == 3) {
+                    ArangoBusinessCompanySMInfo sm = new ArangoBusinessCompanySMInfo(name, r.vertex.getId(), e.getId());
+                    sm.occupations.add((String) e.getAttribute("position"));
+                    info.oldSMs.put(name, sm);
+                }
+            }
+        }
+    }
+
+    private void state2_inner_update_LPSHSM(ArangoBusinessCompanyDiff diff) throws Exception {
+        diff.diff();
+        // save to arangodb.
+        ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
+        Map<String, List<String>> groups = diff.groupByCollection(diff.removedVertices);
+        for (String collection : groups.keySet()) {
+            List<String> keys = groups.get(collection);
+            business.delete(collection, keys);
+        }
+        if (diff.removedEdges.size() > 0)
+            business.delete(ArangoBusinessRelation.collection, diff.removedEdges);
+        if (diff.updatedEdges.size() > 0)
+            business.insert(ArangoBusinessRelation.collection, diff.updatedEdges, true);
+        List<BaseDocument> cs = new ArrayList<>();
+        List<BaseDocument> ps = new ArrayList<>();
+        for (String n : diff.insertedVertices.keySet()) {
+            BaseDocument d = diff.insertedVertices.get(n);
+            if (d.getId().startsWith(ArangoBusinessCompany.collection)) cs.add(d);
+            else ps.add(d);
+        }
+        if (!cs.isEmpty()) business.insert(ArangoBusinessCompany.collection, cs, true);
+        if (!ps.isEmpty()) business.insert(ArangoBusinessPerson.collection, ps, true);
+        if (diff.insertedEdges.size() > 0)
+            business.insert(ArangoBusinessRelation.collection, diff.insertedEdges, true);
+
+        // combine person vertices
+        if (!ps.isEmpty()) {
+            combine(diff.code, -1);
+        }
+    }
+
 
     @Override
     protected void state6_pre() throws Exception {
@@ -621,14 +1087,14 @@ public class MainTaskArangodbCompany extends MainTaskBase {
      */
     protected boolean state6_inner() throws Exception {
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
-        int company_vertex_id_length = ArangoBusinessCompany.collection.length()+10;
+//        int company_vertex_id_length = ArangoBusinessCompany.collection.length()+10;
 
         List<OrgCompanyList> companies = MybatisClient.getCompanies(checkpoint, batch);
         if (companies.size() == 0) return false;
 
         // key: vertex key, value: vertex out-in degree
-        Map<String, Integer> map = new HashMap<>();     //
-        List<String> keys = new ArrayList<>();
+        Map<String, Integer> pmap = new HashMap<>();     //
+        Map<String, Integer> cmap = new HashMap<>();
         for (OrgCompanyList company : companies) {
             if (company.oc_id > checkpoint) checkpoint = company.oc_id;
 
@@ -640,68 +1106,107 @@ public class MainTaskArangodbCompany extends MainTaskBase {
             company.oc_name = company.oc_name.trim();
             if (filter_out(company.oc_name)) continue;
 
-            keys.add(company.oc_code);
-            map.put(ArangoBusinessCompany.collection+"/"+company.oc_code, 0);
+            cmap.put(ArangoBusinessCompany.collection+"/"+company.oc_code, 0);
         }
-        if (map.size() > 0) {
-            List<BaseEdgeDocument> edges = business.searchByTos(map.keySet());
+        if (cmap.size() > 0) {
+            // according to company nodes, searching all their neighbours(include person nodes)
+            List<BaseEdgeDocument> edges = business.searchByTos(cmap.keySet());
             if (edges == null) return true;
 
             for (BaseEdgeDocument edge : edges) {
                 String id = edge.getFrom();
-                if (!map.containsKey(id)) {
-                    map.put(id, 0);
-                    keys.add(id.split("/")[1]);
-                }
-            }
-            Collection<BaseDocument> vertices = business.get(ArangoBusinessPerson.collection, keys);
-            if (vertices == null) return true;
-            for (BaseDocument vertex : vertices) {
-                Long degree = (Long) vertex.getAttribute("degree");
-                if (degree != null && degree > 0) {
-                    String id = vertex.getId();
-                    map.remove(id);
-                }
-            }
-            edges = business.searchByEnds(map.keySet(), 3);
-            if (edges == null) return true;
-
-            for (BaseEdgeDocument edge : edges) {
-                if (edge == null) continue;
-                String from = edge.getFrom();   // parallel edges should be counted repeatedly.
-                Integer count = map.get(from);
-                if (count == null) map.put(from, 1);
-                else map.put(from, count+1);
-            }
-
-            StringBuilder sb = new StringBuilder();
-
-            for (String id : map.keySet()) {
-                if (sb.length() == 0) {
-                    sb.append("LET persons = [{_key: '");
-                    sb.append(id.split("/")[1]).append("', c: ").append(map.get(id)).append("}");
+                if (id.startsWith(ArangoBusinessCompany.collection)) {
+                    if (!cmap.containsKey(id)) {
+                        cmap.put(id, 0);
+                    }
                 } else {
-                    sb.append(", {_key: '").append(id.split("/")[1]).append("', c: ").append(map.get(id)).append("}");
+                    if (!pmap.containsKey(id)) {
+                        pmap.put(id, 0);
+                    }
                 }
             }
-            sb.append("]\nFOR v in persons UPDATE v WITH {degree: v.c} IN ")
-                    .append(ArangoBusinessPerson.collection).append(" RETURN NEW");
-            String aql = sb.toString();
-            List<BaseDocument> docs = business.execute(aql);
 
-//            System.out.println(aql);
+            updateDegreeInner(cmap);
+            updateDegreeInner(pmap);
+        }
+
+        if (checkpoint>= 146407862) return false;
+        return true;
+    }
+
+    private void updateDegreeInner(Map<String, Integer> map) throws Exception {
+        if (map == null || map.size() == 0) return;
+        String fid = map.keySet().iterator().next();
+        ArangoBaseRepository.InOut io = ArangoBaseRepository.InOut.out;      // 2->_from; 1->_to; 3->both from and to
+        String collection = ArangoBusinessPerson.collection;
+        if (fid.startsWith(ArangoBusinessCompany.collection)){
+            io = ArangoBaseRepository.InOut.both;
+            collection = ArangoBusinessCompany.collection;
+        }
+        ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
+        Set<String> keys = new HashSet<>();
+        for (String key :
+                map.keySet()) {
+            keys.add(key.split("/")[1]);
+        }
+
+        // removed those vertices whose degree had been updated
+        Collection<BaseDocument> vertices = business.get(collection, keys);
+        if (vertices == null) return;
+        for (BaseDocument vertex : vertices) {
+            Long degree = (Long) vertex.getAttribute("degree");
+            if (degree != null && degree > 0) {     // removed those vertices whose degree had been updated
+                String id = vertex.getId();
+                map.remove(id);
+            }
+        }
+
+        // update degree
+        List<BaseEdgeDocument> edges = business.searchByEnds(map.keySet(), io);
+        if (edges == null) return;
+        for (BaseEdgeDocument edge : edges) {
+            if (edge == null) continue;
+            String from = edge.getFrom();   // parallel edges should be counted repeatedly.
+            String to = edge.getTo();
+            Integer count = map.get(from);
+            if (count != null) {
+                map.put(from, count+1);
+            }
+            count = map.get(to);
+            if (count != null) {
+                map.put(to, count+1);
+            }
+        }
+
+        // construct AQL and update back to database
+        StringBuilder sb = new StringBuilder();
+        for (String id : map.keySet()) {
+            if (sb.length() == 0) {
+                sb.append("LET entities = [{_key: '");
+                sb.append(id.split("/")[1]).append("', c: ").append(map.get(id)).append("}");
+            } else {
+                sb.append(", {_key: '").append(id.split("/")[1]).append("', c: ").append(map.get(id)).append("}");
+            }
+        }
+        sb.append("]\nFOR v in entities UPDATE v WITH {degree: v.c} IN ")
+                .append(collection).append(" RETURN NEW");
+        String aql = sb.toString();
+        try {
+            List<BaseDocument> docs = business.execute(aql);
             String suffix = "\033[0m";
             String prefix = "\033[31;1m";
             for (BaseDocument doc : docs) {
                 Long degree = (Long) doc.getAttribute("degree");
                 long d = degree == null ? -1 : (long) degree;
-                if (d < 10) continue;
+                if (d < 100) continue;
                 String name = (String) doc.getAttribute("name");
                 System.out.println(String.format("document %s-%s has degree %s %d %s",
                         doc.getKey(), name, prefix, d, suffix));
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(aql);
         }
-        return true;
     }
 
 }

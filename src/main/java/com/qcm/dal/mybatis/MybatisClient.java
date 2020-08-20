@@ -4,6 +4,7 @@ import com.qcm.config.GlobalConfig;
 import com.qcm.dal.DbName;
 import com.qcm.util.MiscellanyUtil;
 import com.qcm.entity.*;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -70,6 +71,14 @@ public class MybatisClient {
         List<OrgCompanyList> list = mapper.getCompanies(start, count);
         session.close();
         return list;
+    }
+
+    public static OrgCompanyList getCompany(String oc_code) {
+        SqlSession session = factories.get(DbName.com).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        OrgCompanyList c = mapper.getCompany(oc_code);
+        session.close();
+        return c;
     }
 
     public static int getCheckpoint(String key) {
@@ -317,6 +326,14 @@ public class MybatisClient {
         SqlSession session = factories.get(DbName.com).openSession();
         ComMapper mapper = session.getMapper(ComMapper.class);
         List<Map<String, Object>> list = mapper.selectMany(sql);
+        session.close();
+        return list;
+    }
+
+    public static List<OrgCompanyUpdateMeta> getCompanyUpdateMeta(int start, int count) {
+        SqlSession session = factories.get(DbName.sync).openSession();
+        ComMapper mapper = session.getMapper(ComMapper.class);
+        List<OrgCompanyUpdateMeta> list = mapper.getCompanyUpdateMeta(start, count);
         session.close();
         return list;
     }

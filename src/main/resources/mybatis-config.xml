@@ -81,6 +81,15 @@
                 <property name="password" value="${mssql.property.pass}"/>
             </dataSource>
         </environment>
+        <environment id="sync">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="POOLED">
+                <property name="driver" value="${mssql.driver}"/>
+                <property name="url" value="${mssql.property.url}"/>
+                <property name="username" value="${mssql.property.user}"/>
+                <property name="password" value="${mssql.property.pass}"/>
+            </dataSource>
+        </environment>
     </environments>
     <!-- 将mapper文件加入到配置文件中 -->
     <mappers>

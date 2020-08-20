@@ -114,4 +114,10 @@ public class ArangoBusinessCompany {
     public static String toId(String key) {
         return String.format("%s/%s", collection, key);
     }
+
+    public static boolean isUsefulCompany(String keyOrId) {
+        if (MiscellanyUtil.isBlank(keyOrId)) return false;
+        if (keyOrId.contains("/")) keyOrId = keyOrId.split("/")[1];
+        return keyOrId.length() == 9;
+    }
 }

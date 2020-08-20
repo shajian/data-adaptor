@@ -7,6 +7,10 @@
         select top ${count} oc_id, oc_code, oc_name, oc_address, oc_number, oc_area, oc_issuetime, oc_creditcode, oc_companytype from OrgCompanyList where oc_id &gt; ${start} order by oc_id;
     </select>
 
+    <select id="getCompany" resultType="company">
+        select top 1 oc_id, oc_code, oc_name, oc_address, oc_number, oc_area, oc_issuetime, oc_creditcode, oc_companytype from OrgCompanyList where oc_code = '${oc_code}';
+    </select>
+
     <select id="getCompanyDtl" resultType="com.qcm.entity.OrgCompanyDtl" parameterType="string">
         select top 1 od_oc_code, od_faRen, od_regM, od_regMoney, od_regDate, od_bussinessDes, od_ext from OrgCompanyDtl where od_oc_code='${oc_code}';
     </select>
@@ -28,8 +32,6 @@
     <select id="getCompanyGDsGsxt" resultType="com.qcm.entity.OrgCompanyGsxtDtlGD">
         select top 8000 og_oc_code, og_name, og_type, og_subscribeAccount, og_status, og_realAccount from OrgCompanyGsxtDtlGD_${tail} where og_oc_code='${oc_code}';
     </select>
-
-
 
     <select id="getCompanyContacts" resultType="com.qcm.entity.OrgCompanyContact" parameterType="string">
         select top 1000 oc_code, oc_type, oc_contact, oc_contactName, oc_status from OrgCompanyContact where oc_code='${oc_code}';
@@ -114,5 +116,9 @@
 
     <select id="selectMany" parameterType="java.lang.String" resultType="java.util.HashMap">
         ${value}
+    </select>
+
+    <select id="getCompanyUpdateMeta" resultType="com.qcm.entity.OrgCompanyUpdateMeta">
+        select top ${count} id, table_name, field_name, field_values create_time, type from OrgCompanyUpdateMeta where id > ${start} order by id;
     </select>
 </mapper>

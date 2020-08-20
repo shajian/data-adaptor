@@ -1,5 +1,6 @@
 package com.qcm.task.com;
 
+import com.arangodb.entity.BaseDocument;
 import com.qcm.config.GlobalConfig;
 import com.qcm.graph.ArangoBusinessCompany;
 import com.qcm.graph.ArangoBusinessPack;
@@ -42,7 +43,7 @@ public class SubTaskComDtl extends SubTaskComBase {
 
         if (oc_code != null) {
             OrgCompanyDtl dtl = MybatisClient.getCompanyDtl(oc_code);
-            if (dtl != null) {
+            if (dtl != null && !MiscellanyUtil.isBlank(dtl.od_faRen)) {
                 dtl.od_faRen = dtl.od_faRen.trim();
                 if (e_com != null) {    // fill es data
                     e_com.setLegal_person(dtl.od_faRen);
@@ -109,10 +110,6 @@ public class SubTaskComDtl extends SubTaskComBase {
                         }
                     }
                 }
-//                if (compack.redis != null) {
-//                    byte status = ComUtil.getCompanyStatus(dtl.od_ext);
-//                    compack.redis.setValid(ComUtil.isCompanyStatusNormal(status));
-//                }
             }
 
             // post handling
@@ -128,5 +125,33 @@ public class SubTaskComDtl extends SubTaskComBase {
         }
 
         countDown();
+    }
+
+    public static BaseDocument fromLegalPerson(String oc_code, String name) {
+        int flag = NLP.recognizeLSM(name);
+//                    int sn = 0;
+        if (flag == 1) {    // company-type legal person
+            // try to get oc_code of this company-type legal person
+            List<String> codeAreas = ComUtil.getCodeAreas(name);
+
+            if (codeAreas.isEmpty()) {      // this company is unknown
+                String prunedName = ComUtil.pruneCompanyName(name);
+                if (prunedName.length() < name.length()) {
+                    codeAreas = ComUtil.getCodeAreas(prunedName);
+                    if (codeAreas.size() > 0)
+                        name = prunedName;
+                }
+            }
+            if (codeAreas.isEmpty()) {
+                return new ArangoBusinessCompany(name).to();
+            } else {
+                String codeArea = codeAreas.get(0);
+                return new ArangoBusinessCompany(
+                        codeArea.substring(0,9), name, codeArea.substring(9)).to();
+            }
+
+        } else/* if (flag == 2)*/ {
+            return new ArangoBusinessPerson(name, oc_code).to();
+        }
     }
 }

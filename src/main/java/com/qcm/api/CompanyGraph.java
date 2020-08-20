@@ -8,9 +8,10 @@ import com.qcm.graph.PersonAggregation;
 import java.util.List;
 
 public class CompanyGraph {
+    // person aggregation
     public static String aggregate(GraphParam param) {
         try {
-            if (param.code == null) {
+            if (param.code == null) {   // unspecified company
                 // check param validation
                 List<PersonAggregation> aggs = ArangoBusinessRepository.singleton().aggregate(
                         param.person, param.start, param.count);

@@ -6,5 +6,6 @@ public enum DbName {
     ext,
     extension,
     brand,
-    app
+    app,
+    sync
 }

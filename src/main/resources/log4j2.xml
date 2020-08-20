@@ -76,7 +76,8 @@
             <AppenderRef ref="AsyncFile" />
         </AsyncLogger>
         <Root level="info">
-            <AppenderRef ref="RollingFile" />
+<!--            <AppenderRef ref="RollingFile" />-->
+            <AppenderRef ref="Console" />
 <!--            <AppenderRef ref="Mail" />-->
         </Root>
     </loggers>

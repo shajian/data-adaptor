@@ -160,7 +160,7 @@ public class ArangoBusinessRepository extends ArangoBaseRepository<ArangoBusines
 
         Collections.sort(companies);        // sort to retrieve with batch
         List<String> keys = companies.subList(0, 10);
-        Collection<BaseDocument> docs = get(ArangoBusinessCompany.collection, keys);
+        Collection<BaseDocument> docs = get(ArangoBusinessCompany.collection, new HashSet<>(keys));
         if (docs != null) {
             for (BaseDocument doc : docs) {
                 CompanyTriple triple = new CompanyTriple();

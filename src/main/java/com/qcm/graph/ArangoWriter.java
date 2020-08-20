@@ -26,15 +26,15 @@ public class ArangoWriter {
         }
     }
 
-    public static void insert(List<ComPack> cps) throws Exception {
+    public static void insert(List<ComPack> cps, boolean overwrite) throws Exception {
         if (GlobalConfig.getEnv() == 1) {
-            insert_env1(cps);
+            insert_env1(cps, overwrite);
         } else {
-            insert_env2(cps);
+            insert_env2(cps, overwrite);
         }
     }
 
-    private static void insert_env2(List<ComPack> cps) throws Exception {
+    private static void insert_env2(List<ComPack> cps, boolean overwrite) throws Exception {
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
         Map<String, BaseDocument> companies = new HashMap<>();
         Map<String, BaseDocument> persons = new HashMap<>();
@@ -81,11 +81,11 @@ public class ArangoWriter {
 //                ArangoBusinessCompany.collection, ArangoBusinessPerson.collection));
 //        System.out.println(String.format("companies: %d, persons: %s",
 //                companies.size(), persons.size()));
-        business.insert(ArangoBusinessCompany.collection, companies.values());
-        business.insert(ArangoBusinessPerson.collection, persons.values());
-        business.insert_e(relations.values());
+        business.insert(ArangoBusinessCompany.collection, companies.values(), overwrite);
+        business.insert(ArangoBusinessPerson.collection, persons.values(), overwrite);
+        business.insert_e(relations.values(), overwrite);
     }
-    private static void insert_env1(List<ComPack> cps) throws Exception {
+    private static void insert_env1(List<ComPack> cps, boolean overwrite) throws Exception {
         Map<String, ArangoCpVD> vertices = new HashMap<>(cps.size());
         Map<String, ArangoCpED> edges = new HashMap<>(cps.size());
         for (ComPack cp : cps) {
@@ -185,7 +185,7 @@ public class ArangoWriter {
             e.printStackTrace();
         }
         try {
-            cp.insert_e(edocs);
+            cp.insert_e(edocs, overwrite);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -195,7 +195,7 @@ public class ArangoWriter {
      * do not need to consider for env=1.
      * @param cps
      */
-    public static void update(List<ComPack> cps) throws Exception {
+    public static void update(List<ComPack> cps, boolean overwrite) throws Exception {
         ArangoBusinessRepository business = ArangoBusinessRepository.singleton();
         List<ComPack> newAdds = new ArrayList<>();
         for (ComPack cp : cps) {
@@ -284,8 +284,8 @@ public class ArangoWriter {
             insert_Vertices.addAll(p.sm_map.values());
             insert_Edges.addAll(p.r_sm_map.values());
 
-            business.insert(insert_Vertices);
-            business.insert(insert_Edges);
+            business.insert(insert_Vertices, overwrite);
+            business.insert(insert_Edges, overwrite);
         }
     }
 
