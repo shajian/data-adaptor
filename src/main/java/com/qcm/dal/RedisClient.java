@@ -246,6 +246,9 @@ public class RedisClient {
         return b;
     }
 
+    public static void srem(String key, String member) {
+        srem(key, member, reverseIndexDb);
+    }
     /**
      * remove the given member from a set specified by the key.
      * @param key

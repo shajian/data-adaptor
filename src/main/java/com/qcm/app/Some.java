@@ -1,9 +1,9 @@
 package com.qcm.app;
 
-import com.qcm.task.com.MainTaskArangodbCompany;
-import com.qcm.task.com.MainTaskEsCompany;
-import com.qcm.task.com.MainTaskMongodbCompany;
-import com.qcm.task.com.MainTaskRedisCompanyIndex;
+import com.qcm.task.maintask.ArangoComTask;
+import com.qcm.task.maintask.ESComTask;
+import com.qcm.task.maintask.MongoComTask;
+import com.qcm.task.maintask.RedisComTask;
 import com.qcm.task.stat.BrowseCount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,17 +24,17 @@ public class Some {
                 BrowseCount.start();
             } else if (taskNo == 2) {
                 System.out.println("writing data into elasticsearch + mongodb...");
-                MainTaskEsCompany writer = new MainTaskEsCompany();
+                ESComTask writer = new ESComTask();
                 writer.start();
             } else if (taskNo == 3) {
-                MainTaskRedisCompanyIndex writer = new MainTaskRedisCompanyIndex();
+                RedisComTask writer = new RedisComTask();
                 writer.start();
             } else if (taskNo == 4) {
-                MainTaskArangodbCompany writer = new MainTaskArangodbCompany();
+                ArangoComTask writer = new ArangoComTask();
                 ShutdownHook.register(() -> writer.exitSafely());
                 writer.start();
             } else if (taskNo == 5) {
-                MainTaskMongodbCompany writer = new MainTaskMongodbCompany();
+                MongoComTask writer = new MongoComTask();
                 writer.start();
             } else if (taskNo == 0) {
                 Test.test();

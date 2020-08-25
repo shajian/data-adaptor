@@ -1,6 +1,6 @@
 package com.qcm.controller;
 
-import com.qcm.es.EsSearchCompanyParam;
+import com.qcm.es.search.EsSearchCompanyParam;
 import com.qcm.entity.MongoComDtl;
 import com.qcm.entity.RetrieveRange;
 import org.springframework.web.bind.annotation.*;

@@ -52,7 +52,7 @@ REM if [%1]==[] (
 REM ) else if "%1"=="-cp" (
 	REM if [%2] == [] (
 		REM ECHO "example:"
-		REM ECHO "	./start -cp xx.jar com.qcm.Some"
+		REM ECHO "	./start -cp xx.jar com.qcm.app.Some"
 	REM ) else (
 		REM java %JAVA_OPTS% %*
 	REM )

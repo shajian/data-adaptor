@@ -1,8 +1,8 @@
 package com.qcm.api;
 
 import com.qcm.util.MiscellanyUtil;
-import com.qcm.es.EsSearchCompanyParam;
-import com.qcm.es.EsCompanyRepository;
+import com.qcm.es.search.EsSearchCompanyParam;
+import com.qcm.es.repository.EsCompanyRepository;
 import com.qcm.entity.EsCompanyTripleMatch;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;

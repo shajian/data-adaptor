@@ -2,10 +2,10 @@ package com.qcm.controller;
 
 import com.qcm.api.CompanyGraph;
 import com.qcm.api.RedisCompanySearcher;
-import com.qcm.es.EsCompanyEntity;
+import com.qcm.es.entity.EsCompanyEntity;
 import com.qcm.api.EsCompanySearcher;
-import com.qcm.es.EsSearchCompanyParam;
-import com.qcm.es.EsCompanyRepository;
+import com.qcm.es.search.EsSearchCompanyParam;
+import com.qcm.es.repository.EsCompanyRepository;
 import com.qcm.entity.EsCompanyTripleMatch;
 import com.qcm.graph.GraphParam;
 import org.springframework.web.bind.annotation.*;

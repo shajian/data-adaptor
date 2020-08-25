@@ -1,8 +1,8 @@
 package com.qcm.entity;
 
 import com.qcm.es.EsAnalyzer;
-import com.qcm.es.EsFieldMeta;
-import com.qcm.es.EsFieldType;
+import com.qcm.es.entity.EsFieldMeta;
+import com.qcm.es.entity.EsFieldType;
 import com.qcm.es.EsIndexMeta;
 import lombok.Getter;
 import lombok.Setter;

@@ -38,3 +38,6 @@ max_traverse_depth=2
 # penalize those company with too many share holders or senior members
 # every increase `step` people, the distance will increase 1.
 dist_step=1000
+
+# sleep time for state 2
+sleep_time=600

@@ -7,7 +7,7 @@ import com.qcm.dal.arangodb.ArangoBusinessRepository;
 import com.qcm.entity.ArangoCpED;
 import com.qcm.entity.ArangoCpPack;
 import com.qcm.entity.ArangoCpVD;
-import com.qcm.task.com.ComPack;
+import com.qcm.task.maintask.ComPack;
 import com.qcm.util.MiscellanyUtil;
 import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 

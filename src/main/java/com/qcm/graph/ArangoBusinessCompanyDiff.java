@@ -3,7 +3,7 @@ package com.qcm.graph;
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.entity.BaseEdgeDocument;
 import com.qcm.dal.arangodb.ArangoBusinessRepository;
-import com.qcm.task.com.SubTaskComDtl;
+import com.qcm.task.specialtask.ComDtlTask;
 import com.qcm.util.MiscellanyUtil;
 
 import java.util.*;
@@ -86,7 +86,7 @@ public class ArangoBusinessCompanyDiff {
                 return;
             }
             //
-            BaseDocument lp = SubTaskComDtl.fromLegalPerson(code, insertedLP);
+            BaseDocument lp = ComDtlTask.fromLegalPerson(code, insertedLP);
             insertedVertices.put(insertedLP, lp);
             insertedEdges.add(new ArangoBusinessRelation(lp.getId(), ArangoBusinessCompany.toId(code), 1).to());
         }
@@ -132,7 +132,7 @@ public class ArangoBusinessCompanyDiff {
                 } else {    // add a SH vertex
                     BaseDocument v = insertedVertices.get(newSH.name);
                     if (v == null) {
-                        v = SubTaskComDtl.fromLegalPerson(code, newSH.name);
+                        v = ComDtlTask.fromLegalPerson(code, newSH.name);
                         insertedVertices.put(newSH.name, v);
                     }
                     r = new ArangoBusinessRelation(v.getId(), ArangoBusinessCompany.toId(code), 2);
@@ -185,7 +185,7 @@ public class ArangoBusinessCompanyDiff {
                 } else {    // add a SM vertex
                     BaseDocument v = insertedVertices.get(newSM.name);
                     if (v == null) {
-                        v = SubTaskComDtl.fromLegalPerson(code, newSM.name);
+                        v = ComDtlTask.fromLegalPerson(code, newSM.name);
                         insertedVertices.put(newSM.name, v);
                     }
                     r = new ArangoBusinessRelation(v.getId(), ArangoBusinessCompany.toId(code), 3);

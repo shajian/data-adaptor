@@ -1,9 +1,8 @@
 package com.qcm.es.search;
 
-import com.qcm.es.EsUpdateLogEntity;
-import com.qcm.es.EsUpdateLogRepository;
-import com.qcm.es.EsUpdateLogSearchParam;
-import com.qcm.task.com.TaskType;
+import com.qcm.es.entity.EsUpdateLogEntity;
+import com.qcm.es.repository.EsUpdateLogRepository;
+import com.qcm.task.maintask.TaskType;
 import com.qcm.util.BeanUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
