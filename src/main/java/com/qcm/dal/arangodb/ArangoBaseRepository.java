@@ -557,6 +557,9 @@ public abstract class ArangoBaseRepository<T> {
         }
         return insert(id.split("/")[0], u, true);
     }
+    public <U extends BaseDocument> String insert(String coll, U u) {
+        return insert(coll, u, true);
+    }
     public <U extends BaseDocument> String insert(String coll, U u, boolean overwrite) {
         if (MiscellanyUtil.isBlank(coll) || u == null) return null;
         ArangoDatabase db = client.db(database);

@@ -13,6 +13,10 @@ import java.util.Scanner;
 public class Test {
     private static Logger logger = LoggerFactory.getLogger(Test.class);
     public static void main(String[] args) {
+        String projectname = System.getProperty("user.dir");
+        String pn = projectname.substring(projectname.lastIndexOf('/')+1);
+        System.out.println(pn);
+
 //        String template = "f %d, '%s' sdfa";
 //        System.out.println(String.format(template, 1, "look", 1.2));
 //        GraphParam p = new GraphParam();
@@ -30,8 +34,8 @@ public class Test {
 //        }
 //        logger.info("test info message.");
 //        md5();
-        CallTest.sayHello("scala");
-        logger.error("error message");
+//        CallTest.sayHello("scala");
+//        logger.error("error message");
     }
 
 

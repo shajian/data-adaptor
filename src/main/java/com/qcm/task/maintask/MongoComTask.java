@@ -19,7 +19,7 @@ public class MongoComTask extends BaseTask {
         checkpointName = "data-adaptor.mongo.company";
     }
     /**
-     * for state==1, this task is attached to ESComTask, and
+     * for state==1, this task is attached to ESCompanyTask, and
      * only provides some APIs to implement writing into Mongodb.
      */
 

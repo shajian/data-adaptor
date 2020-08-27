@@ -5,7 +5,6 @@ import com.qcm.es.entity.EsFieldMeta;
 import com.qcm.es.entity.EsFieldType;
 import com.qcm.es.search.EsSearchBaseParam;
 import com.qcm.util.BeanUtil;
-import lombok.Getter;
 import org.apache.http.util.Asserts;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -44,8 +43,8 @@ import java.util.Map;
 public abstract class EsBaseRepository<T> {
     protected RestHighLevelClient client;
     protected Class<T> clazz;
-    @Getter
     protected EsIndexMeta indexMeta;
+    public EsIndexMeta getIndexMeta() { return indexMeta; }
 
     public EsBaseRepository() {
 

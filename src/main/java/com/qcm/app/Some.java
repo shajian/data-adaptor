@@ -1,7 +1,7 @@
 package com.qcm.app;
 
 import com.qcm.task.maintask.ArangoComTask;
-import com.qcm.task.maintask.ESComTask;
+import com.qcm.task.maintask.ESCompanyTask;
 import com.qcm.task.maintask.MongoComTask;
 import com.qcm.task.maintask.RedisComTask;
 import com.qcm.task.stat.BrowseCount;
@@ -24,7 +24,7 @@ public class Some {
                 BrowseCount.start();
             } else if (taskNo == 2) {
                 System.out.println("writing data into elasticsearch + mongodb...");
-                ESComTask writer = new ESComTask();
+                ESCompanyTask writer = new ESCompanyTask();
                 writer.start();
             } else if (taskNo == 3) {
                 RedisComTask writer = new RedisComTask();

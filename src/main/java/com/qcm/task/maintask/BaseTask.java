@@ -43,6 +43,15 @@ public abstract class BaseTask {
     protected int thread_queue_size_ratio;
     protected int sleep_time;
 
+    private String _projectName;
+    public String projectName() {
+        if (_projectName == null) {
+            String projectname = System.getProperty("user.dir");
+            _projectName = projectname.substring(projectname.lastIndexOf('/')+1);
+        }
+        return _projectName;
+    }
+
 
     public BaseTask(String file) throws Exception {
         File f = new File(file);

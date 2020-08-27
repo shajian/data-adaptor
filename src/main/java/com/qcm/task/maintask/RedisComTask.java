@@ -7,7 +7,7 @@ import com.qcm.entity.OrgCompanyUpdateMeta;
 import com.qcm.entity.RedisCompanyIndex;
 import com.qcm.es.entity.EsUpdateLogEntity;
 import com.qcm.es.repository.EsUpdateLogRepository;
-import com.qcm.es.entity.EsComTripleEntity;
+import com.qcm.es.entity.EsComEntity;
 import com.qcm.es.search.EsComTripleSearcher;
 import com.qcm.es.search.EsUpdateLogSearcher;
 import com.qcm.task.specialtask.ComListTask;
@@ -319,20 +319,20 @@ public class RedisComTask extends com.qcm.task.maintask.BaseTask {
                 }
 
                 if (esCodes.size() > 0) {
-                    Map<String, EsComTripleEntity> olds = new HashMap<>();
-                    List<EsComTripleEntity> oldEntities = EsComTripleSearcher.mget(esCodes);
+                    Map<String, EsComEntity> olds = new HashMap<>();
+                    List<EsComEntity> oldEntities = EsComTripleSearcher.mget(esCodes);
                     if (oldEntities != null && oldEntities.size() > 0) {
-                        for (EsComTripleEntity old : oldEntities) {
-                            olds.put(old.getCode(), old);
+                        for (EsComEntity old : oldEntities) {
+                            olds.put(old.code, old);
                         }
                     }
                     for (String key : news.keySet()) {
                         ComPack cp = news.get(key);
-                        EsComTripleEntity old = olds.get(cp.redis.getCode());
+                        EsComEntity old = olds.get(cp.redis.getCode());
                         if (old != null) {
-                            String oldKey = Cryptor.md5(old.getName());
+                            String oldKey = Cryptor.md5(old.name);
                             if (allSetKeys.contains(oldKey)) {
-                                removeMap.put("s:"+oldKey, old.getCode()+old.getArea());
+                                removeMap.put("s:"+oldKey, old.name+old.area);
                             } else {
                                 removeList.add(oldKey);
                             }
