@@ -1,5 +1,13 @@
 package com.qcm.tasks
 
-object ArangoTask {
+import com.qcm.utils.Constants
+import TaskImplicitParams._
+
+abstract class ArangoTask {
+
+}
+
+class ArangoBusinessTask extends ComplexTask(Constants.scala_config_file_arango_business) with ArangoTask {
+  def prepare() = _
 
 }

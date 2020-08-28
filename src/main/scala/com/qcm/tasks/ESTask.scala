@@ -1,29 +1,19 @@
 package com.qcm.tasks
 
-import akka.actor.typed.{ActorSystem, Behavior}
-import akka.actor.typed.scaladsl.Behaviors
-import com.qcm.actor.{BatchEsComFilled, BatchFillEsCom, ComDtl, Command, ESCom, ESComStart}
 import com.qcm.dal.mybatis.MybatisClient
+import com.qcm.entity.OrgCompanyUpdateMeta
 import com.qcm.es.entity.{EsComEntity, EsUpdateLogEntity}
-import com.qcm.es.repository.{EsBaseRepository, EsComRepository}
-import com.qcm.tasks.ESComTask.repository
-import com.qcm.utils.{BaseConfigBus, ComInfoFill, TypeConverter}
+import com.qcm.es.repository.{EsBaseRepository, EsComRepository, EsUpdateLogRepository}
+import com.qcm.utils.{Constants, ESComFill, TypeConvert}
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-import scala.util.matching.Regex
+import TaskImplicitParams._
 
-abstract class ESTask[T](name: String, configFile: String) extends BaseTask(name, configFile)
+
 //                 with ActorTask[Command]
-{
-  val repository: EsBaseRepository[T]
-  def state1_pre(): Unit = {
-    // build ES schema here
-    if (!repository.exists()) {
-      val index = repository.getIndexMeta.index()
-      println(s"ES index $index is not existed, it will be created...")
-      repository.map()
-    }
-  }
+
+
 //  val system = ActorSystem(act(), name)
 
 
@@ -40,22 +30,76 @@ abstract class ESTask[T](name: String, configFile: String) extends BaseTask(name
 //      Behaviors.same
 //    }
 //  }
+
+trait ESTask[T] {
+  val repository: EsBaseRepository[T]
+  def mtd0_before(): Unit = {
+    // build ES schema here
+    if (!repository.exists()) {
+      val index = repository.getIndexMeta.index()
+      println(s"ES index $index is not existed, it will be created...")
+      repository.map()
+    }
+  }
+
 }
 
-object ESComTask extends ESTask[EsComEntity]("ESCom", "config/Task_ES_Com.txt") {
+object ESComTask extends ComplexTask(Constants.scala_config_file_es_com) with ESTask[EsComEntity] {
   val repository = EsComRepository.singleton()
+
+//  val filter_outs = config.getString("filter_out") match {
+//    case None => Array.empty
+//    case Some(s) => s.split("\\s").map(p => new Regex(p))
+//  }
+
   def prepare(): Unit = {
-    state_pres(0) = state1_pre
-    state_inners(0) = state1_inner
+    mtd_before(0) = mtd0_before
+    mtd_inner(0) = mtd0_inner
   }
 
 
-  def state1_inner(checkpoint: Int): (Boolean, Int) = {
+  def mtd0_inner(checkpoint: Int): (Boolean, Int) = {
     val companies = MybatisClient.getCompanies(checkpoint, batch).asScala
     if (companies.isEmpty) return (false, checkpoint)
-    val entities = TypeConverter.orgCompanyList2EsComEntity(companies.toList)
-    ComInfoFill.batchFillEsCom(entities)
+    val entities = TypeConvert.orgCompanyList2EsComEntity(companies.toList)
+    ESComFill.batchFillStatus(entities)
     repository.index(entities.asJava)
     (true, companies.last.oc_id)
+  }
+
+  def mtd2_inner(checkpoint: Int): (Boolean, Int) =
+    MybatisClient.getCompanyUpdateMeta(checkpoint, batch).asScala match {
+      case metas if !metas.isEmpty => {
+        val newMetas = mutable.Map.empty[String, OrgCompanyUpdateMeta]
+        for (m <- metas) {
+          val id = m.table_name + m.field_names + m.field_values
+          newMetas += (id -> m)
+        }
+        val logs = newMetas.values.map(v => TypeConvert.updateMeta2UpdateLog(name, v))
+        val groups = newMetas.values.partition(v => v.table_name == Constants.orgCompanyList)
+        val first = groups._1.map(c => TypeConvert.updateMeta2EsComEntity(c)).toList
+        val second = groups._2.map(c => TypeConvert.updateMeta2EsComEntity(c)).toList
+        ESComFill.batchFillComTriple(first)
+        ESComFill.batchFillStatus(second)
+        repository.index((first++second).asJava)
+        ESUpdateLogTask.repository.index(logs.toSeq.asJava)
+        (true, metas.last.id)
+      }
+      case _ => (false, checkpoint)
+    }
+
+}
+
+object ESUpdateLogTask extends SimpleTask(Constants.scala_config_file_update_log) with ESTask[EsUpdateLogEntity] {
+  val repository = EsUpdateLogRepository.singleton()
+
+  def prepare(): Unit = {
+    mtd_before(0) = mtd0_before
+    mtd_inner(0) = mtd0_inner
+  }
+
+  def mtd0_inner(checkpoint: Int): (Boolean, Int) = {
+    // remove expired logs from ES
+    _
   }
 }
