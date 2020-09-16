@@ -6,6 +6,9 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.DeleteByQueryRequestBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 
@@ -26,6 +29,13 @@ public class EsUpdateLogRepository extends EsBaseRepository<EsUpdateLogEntity> {
         return client.search(request.source(builder), RequestOptions.DEFAULT);
     }
 
+    public long deleteByQuery(EsUpdateLogSearchParam param) throws Exception {
+        DeleteByQueryRequest request = new DeleteByQueryRequest(indexMeta.index());
+        request.setBatchSize(param.getSize());
+        request.setQuery(query(param));
+        BulkByScrollResponse resp = client.deleteByQuery(request, RequestOptions.DEFAULT);
+        return resp.getDeleted();
+    }
     private QueryBuilder query(EsUpdateLogSearchParam input) {
         QueryBuilder builder = QueryBuilders.boolQuery().filter(filter(input)).must(must(input));
         return builder;
@@ -52,7 +62,7 @@ public class EsUpdateLogRepository extends EsBaseRepository<EsUpdateLogEntity> {
                     bool.must(term);
                     break;
                 case "create_time":
-                case "last_read_time":
+                case "read_time":
                     BoolQueryBuilder date = QueryBuilders.boolQuery();
                     for (String value : values) {
                         String[] segs = value.split("|");

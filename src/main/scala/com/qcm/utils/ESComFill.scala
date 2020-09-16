@@ -14,7 +14,7 @@ object ESComFill {
   }
 
   def batchFillStatus(cs: List[EsComEntity]): Unit = cs match {
-    case List.empty => Unit
+    case Nil => {}
     case _ => {
       val sb = new mutable.StringBuilder().append("select od_oc_code, od_ext from OrgCompanyDtl where od_oc_code in ('")
       sb.append(cs.map(_.code).mkString("', '")).append("')")
@@ -28,7 +28,7 @@ object ESComFill {
   }
 
   def batchFillComTriple(cs: List[EsComEntity]): Unit = cs match {
-    case List.empty => Unit
+    case Nil => {}
     case _ => {
       val sb = new mutable.StringBuilder().append("select oc_code, oc_name, oc_area from OrgCompanyList where oc_code in ('")
       sb.append(cs.map(_.code).mkString("', '")).append("')")

@@ -4,7 +4,6 @@ import com.qcm.config.GlobalConfig;
 import com.qcm.dal.RedisClient;
 import com.qcm.util.Cryptor;
 import com.qcm.util.MiscellanyUtil;
-import com.qcm.test.CallTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

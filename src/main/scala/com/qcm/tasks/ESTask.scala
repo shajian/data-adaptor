@@ -1,5 +1,7 @@
 package com.qcm.tasks
 
+import java.sql.Date
+
 import com.qcm.dal.mybatis.MybatisClient
 import com.qcm.entity.OrgCompanyUpdateMeta
 import com.qcm.es.entity.{EsComEntity, EsUpdateLogEntity}
@@ -9,6 +11,7 @@ import com.qcm.utils.{Constants, ESComFill, TypeConvert}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import TaskImplicitParams._
+import com.qcm.es.search.EsUpdateLogSearchParam
 
 
 //                 with ActorTask[Command]
@@ -45,6 +48,7 @@ trait ESTask[T] {
 }
 
 object ESComTask extends ComplexTask(Constants.scala_config_file_es_com) with ESTask[EsComEntity] {
+  println("escomtask has been initialized")
   val repository = EsComRepository.singleton()
 
 //  val filter_outs = config.getString("filter_out") match {
@@ -67,25 +71,21 @@ object ESComTask extends ComplexTask(Constants.scala_config_file_es_com) with ES
     (true, companies.last.oc_id)
   }
 
-  def mtd2_inner(checkpoint: Int): (Boolean, Int) =
+  def mtd1_inner(checkpoint: Int): (Boolean, Int) =
     MybatisClient.getCompanyUpdateMeta(checkpoint, batch).asScala match {
       case metas if !metas.isEmpty => {
-        val newMetas = mutable.Map.empty[String, OrgCompanyUpdateMeta]
-        for (m <- metas) {
-          val id = m.table_name + m.field_names + m.field_values
-          newMetas += (id -> m)
-        }
-        val logs = newMetas.values.map(v => TypeConvert.updateMeta2UpdateLog(name, v))
-        val groups = newMetas.values.partition(v => v.table_name == Constants.orgCompanyList)
+        val newMetas = metas.map(m => (m.table_name+m.field_names+m.field_values, m)).distinctBy(_._1).map(_._2)
+        val logs = newMetas.map(v => TypeConvert.updateMeta2UpdateLog(name, v))
+        val groups = newMetas.partition(v => v.table_name == Constants.orgCompanyList)
         val first = groups._1.map(c => TypeConvert.updateMeta2EsComEntity(c)).toList
         val second = groups._2.map(c => TypeConvert.updateMeta2EsComEntity(c)).toList
         ESComFill.batchFillComTriple(first)
         ESComFill.batchFillStatus(second)
         repository.index((first++second).asJava)
-        ESUpdateLogTask.repository.index(logs.toSeq.asJava)
+        ESUpdateLogTask.repository.index(logs.asJava)
         (true, metas.last.id)
       }
-      case _ => (false, checkpoint)
+      case _ => { Thread.sleep(1000*60*5); (false, checkpoint) }
     }
 
 }
@@ -98,8 +98,19 @@ object ESUpdateLogTask extends SimpleTask(Constants.scala_config_file_update_log
     mtd_inner(0) = mtd0_inner
   }
 
+  /**
+    * remove the expired documents from ES
+    * @param checkpoint
+    * @return
+    */
   def mtd0_inner(checkpoint: Int): (Boolean, Int) = {
     // remove expired logs from ES
-    _
+    val span = config.getInt("expired_span", 60)
+    val param = new EsUpdateLogSearchParam
+    param.setFilter("read_time", s"now-$span/d|now/d")
+    val deleted = repository.deleteByQuery(param)
+    log(s"$name, $deleted documents have been deleted")
+    Thread.sleep(1000*60*60)
+    return (true, checkpoint)
   }
 }

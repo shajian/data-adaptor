@@ -16,6 +16,7 @@ public class EsUpdateLogEntity {
     public String field_values;
     @EsFieldMeta(type = EsFieldType.date)
     public Date create_time;
+    /* time when consume this piece of update meta data */
     @EsFieldMeta(type = EsFieldType.date)
     public Date read_time;
     @EsFieldMeta(type = EsFieldType.bool)

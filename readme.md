@@ -34,7 +34,7 @@ is located at `src/main/assembly/assembly.xml`.
 ## 3. API
 run the application directly by 
 ```
-mvn spring-boot:runy
+mvn spring-boot:run
 ```
 build the jar file
 ```

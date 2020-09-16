@@ -39,9 +39,11 @@ if %num%==0 (
 ) else if "%1"=="-cp" (
 	if %num%==3 (
 		java %JAVA_OPTS% %1 %libdir%\%2 %3
+	) else if %num%==4 (
+	    java %JAVA_OPTS% %1 %libdir%\%2 %3 %4
 	) else (
-		ECHO "example:"
-		ECHO "	./start -cp xx.jar com.qcm.app.Some"
+	    ECHO "example:"
+        ECHO "	./start -cp xx.jar com.qcm.app.Some [params]"
 	)
 ) else (
 	ECHO "unknown arguments"

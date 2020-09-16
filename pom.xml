@@ -24,6 +24,7 @@
         <project.mainClass>com.qcm.app.Some</project.mainClass>
         <akka.version>2.6.8</akka.version>
         <scala.version>2.13.3</scala.version>
+        <akka.http.version>10.2.0</akka.http.version>
         <scala.binary.version>2.13</scala.binary.version>
     </properties>
 
@@ -84,36 +85,40 @@
                     </archive>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-<!--                    <finalName>${project.name}</finalName>-->
-                    <appendAssemblyId>false</appendAssemblyId>
-                    <outputDirectory>${project.build.directory}/release/</outputDirectory>
-<!--                    <descriptorRefs>-->
-<!--                        <descriptorRef>bin</descriptorRef>-->
-<!--                    </descriptorRefs>-->
-                    <descriptors>
-                        <descriptor>${pom.basedir}/src/main/assembly/assembly.xml</descriptor>
-                    </descriptors>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <mainClass>${project.mainClass}</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+
+
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-assembly-plugin</artifactId>-->
+<!--                <configuration>-->
+<!--&lt;!&ndash;                    <finalName>${project.name}</finalName>&ndash;&gt;-->
+<!--                    <appendAssemblyId>false</appendAssemblyId>-->
+<!--                    <outputDirectory>${project.build.directory}/release/</outputDirectory>-->
+<!--&lt;!&ndash;                    <descriptorRefs>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <descriptorRef>bin</descriptorRef>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </descriptorRefs>&ndash;&gt;-->
+<!--                    <descriptors>-->
+<!--                        <descriptor>${pom.basedir}/src/main/assembly/assembly.xml</descriptor>-->
+<!--                    </descriptors>-->
+<!--                    <archive>-->
+<!--                        <manifest>-->
+<!--                            <addClasspath>true</addClasspath>-->
+<!--                            <mainClass>${project.mainClass}</mainClass>-->
+<!--                        </manifest>-->
+<!--                    </archive>-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>make-assembly</id>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>single</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+
+
 
             <!-- to run 'mvn spring-boot:run', please uncomment the following lines -->
             <plugin>
@@ -156,6 +161,21 @@
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor-typed_${scala.binary.version}</artifactId>
             <version>${akka.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream_${scala.binary.version}</artifactId>
+            <version>${akka.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http_${scala.binary.version}</artifactId>
+            <version>${akka.http.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http-spray-json_${scala.binary.version}</artifactId>
+            <version>${akka.http.version}</version>
         </dependency>
 <!--        &lt;!&ndash; https://mvnrepository.com/artifact/org.scala-lang/scala-reflect &ndash;&gt;-->
 <!--        <dependency>-->
