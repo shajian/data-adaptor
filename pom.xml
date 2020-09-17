@@ -41,30 +41,47 @@
                 <executions>
                     <execution>
                         <id>compile</id>
+<!--                        <id>attach-sources</id>-->
+<!--                        <id>scala-compile-first</id>-->
                         <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <phase>compile</phase>
-                    </execution>
-                    <execution>
-                        <id>test-compile</id>
-                        <goals>
-                            <goal>testCompile</goal>
-                        </goals>
-                        <phase>test-compile</phase>
-                    </execution>
-                    <execution>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>compile</goal>
+<!--                            <goal>compile</goal>-->
+                            <goal>add-source</goal>
                         </goals>
                     </execution>
+<!--                    <execution>-->
+<!--                        <id>test-compile</id>-->
+<!--                        <goals>-->
+<!--                            <goal>testCompile</goal>-->
+<!--                        </goals>-->
+<!--                        <phase>test-compile</phase>-->
+<!--                    </execution>-->
+<!--                    <execution>-->
+<!--                        <phase>process-resources</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>compile</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
                 </executions>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+<!--                        <id>attach-sources</id>-->
+<!--                        <id>compile</id>-->
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
@@ -73,6 +90,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
                 <configuration>
                     <archive>
                         <manifest>
@@ -126,6 +151,8 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
+
+
 <!--            <plugin>-->
 <!--                <groupId>org.scala-tools</groupId>-->
 <!--                <artifactId>maven-scala-plugin</artifactId>-->
@@ -177,12 +204,12 @@
             <artifactId>akka-http-spray-json_${scala.binary.version}</artifactId>
             <version>${akka.http.version}</version>
         </dependency>
-<!--        &lt;!&ndash; https://mvnrepository.com/artifact/org.scala-lang/scala-reflect &ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>org.scala-lang</groupId>-->
-<!--            <artifactId>scala-reflect</artifactId>-->
-<!--            <version>2.13.3</version>-->
-<!--        </dependency>-->
+        <!-- https://mvnrepository.com/artifact/org.scala-lang/scala-reflect -->
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.elasticsearch.client/elasticsearch-rest-high-level-client -->
         <dependency>
@@ -201,6 +228,10 @@
             <version>7.7.1</version>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <groupId>com.typesafe.scala-logging</groupId>-->
+<!--            <artifactId>scala-logging_2.13</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>

@@ -5,6 +5,7 @@ import com.qcm.dal.mybatis.MybatisClient
 import com.qcm.utils.{BaseConfigBus, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.collection.mutable
 import scala.io.StdIn
 import scala.runtime.Nothing$
 import scala.util.matching.Regex
@@ -17,6 +18,8 @@ import scala.util.matching.Regex
 object TaskImplicitParams {
   implicit val mtds: Int = 3
 }
+
+
 
 
 trait Task {
@@ -35,20 +38,13 @@ trait Task {
   val mtd_inner: Array[Int => (Boolean, Int)]
   def run(): Unit
 
-  // 0: initial; 1: running; 2: paused/suspended; 3:closing; 4: closed
+  // 0: initial; 1: running; (2: paused/suspended;[deprecated]) 3:closing; 4: closed
   protected var _state: Int = 0
   def state: Int = _state
   implicit def bool2Int(b: Boolean) = if (b) 1 else 0
   val state_inners = (0 until methods).map(_ => (_: Int) => (true, 0)).toArray
 
   def info: String
-
-  def suspendAsync(): Unit = _state match {
-    case 1 => _state = 2
-    case _ => {}
-  }
-
-  def continue() = run
 
   def closeAsync(): Unit = _state = 3
 
@@ -113,7 +109,6 @@ abstract class ComplexTask(file: String)(implicit mtds: Int) extends SimpleTask(
 
   def mtd_loop(checkpoint: Int): Unit = _state match {
     case 3 | 4 => _state = 4            // task is (already) terminated manually, set flag `closed`
-    case 2 => {}                          // task is paused
     case _ => mtd_inner(method)(checkpoint) match {
       case (false, _) => _state = 4    // task completed and exits normally, set flag `closed`
       case (true, cp) => {                // task has not finished and will goes into next iteration
@@ -128,12 +123,13 @@ abstract class ComplexTask(file: String)(implicit mtds: Int) extends SimpleTask(
 abstract class SimpleTask(file: String) extends Task {
   val config = BaseConfigBus(file)
   val methods = 1
-  val name = { val n = file.split("_").last; register(n, this); n }
+  val name = file.split("_").last
   val mtd_before = gen_mtd_pre_posts
   val mtd_after = gen_mtd_pre_posts
   val mtd_inner = gen_mtd_inners.toArray
-  private val logger: Logger = if (config.getBool("log_file", false)) LoggerFactory.getLogger(name) else null
-  def log(msg: String) = if (config.getBool("log_file", false)) logger.info(msg) else println(msg)
+  private val _log: String => Unit = if (config.getBool("log_file", false))
+    LoggerFactory.getLogger(name).info else println
+  def log(msg: String) = _log(msg)
 
   def run(): Unit = {
     _state = 1
@@ -146,16 +142,59 @@ abstract class SimpleTask(file: String) extends Task {
 
   def mtd_loop(): Unit = _state match {
     case 3 | 4 => _state = 4
-    case 2 => {}
     case _ => mtd_inner(method)(0)._1 match {
       case false => _state = 4
-      case true => mtd_loop()
+      case true =>
+        log(s"$name, one iteration finishes.")
+        mtd_loop()
     }
   }
 }
 
-trait ActorTask[T] {
-  val system: ActorRef[T]
+//trait ActorTask[T] {
+//  val system: ActorRef[T]
+//}
+
+class DummyTask extends Task {
+  val config = new BaseConfigBus(mutable.Map.empty)
+  val name = "dummy"
+  val methods = 1
+
+  val mtd_before = gen_mtd_pre_posts
+  val mtd_after = gen_mtd_pre_posts
+  val mtd_inner = gen_mtd_inners.toArray
+
+  def info:String = s"dummy task: state->${_state}"
+
+  override def log(msg: String): Unit = DummyTask.logger.info(msg) //println("dummy task: logging sth.")
+
+  override def prepare(): Unit = mtd_inner(0) = (_: Int) => {
+    Thread.sleep(2000)
+    (true, 0)
+  }
+
+  override def run(): Unit = {
+    _state = 1
+    sys addShutdownHook close
+    prepare()
+    mtd_before(method)()
+    mtd_loop()
+    mtd_after(method)()
+  }
+
+  def mtd_loop(): Unit = _state match {
+    case 3 | 4 => _state = 4
+    case _ => mtd_inner(method)(0)._1 match {
+      case false => _state = 4
+      case true =>
+        log(s"$name, one iteration finishes.")
+        mtd_loop()
+    }
+  }
+}
+
+object DummyTask {
+  val logger = LoggerFactory.getLogger(this.getClass.getName)
 }
 
 

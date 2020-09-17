@@ -1,2 +1,2 @@
 # remove the expired documents. unit: day
-expired_span: 60
+expired_span=60

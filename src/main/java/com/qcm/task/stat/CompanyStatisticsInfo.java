@@ -10,6 +10,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Statisticing company browsed frequency is used to optimized company score, which can
+ * help to rank the companies returned by Elasticsearch searching. This task should be
+ * firstly launched and completed. After this, the task can be executed at a regular date
+ * to update company frequencies. However, frequencies are not needed to be updated in time.
+ */
 public class CompanyStatisticsInfo {
     private static AdaFitHistogram[] histograms;
 

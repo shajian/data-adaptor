@@ -14,26 +14,6 @@ import TaskImplicitParams._
 import com.qcm.es.search.EsUpdateLogSearchParam
 
 
-//                 with ActorTask[Command]
-
-
-//  val system = ActorSystem(act(), name)
-
-
-//  def act(): Behavior[Command] = Behaviors.setup { context =>
-//    val dtl = context.spawn(ComDtl(), "com_dtl")
-//    Behaviors.receiveMessage { message =>
-//      message match {
-//        case ESComStart(cp, cs) =>
-//          dtl ! BatchFillEsCom(cp, cs, context.self)
-//        case BatchEsComFilled(cp, cs) =>
-//          repository.index(cs.asJava)
-//          MybatisClient.updateCheckpoint(checkpointName, cp)
-//      }
-//      Behaviors.same
-//    }
-//  }
-
 trait ESTask[T] {
   val repository: EsBaseRepository[T]
   def mtd0_before(): Unit = {
@@ -47,7 +27,7 @@ trait ESTask[T] {
 
 }
 
-object ESComTask extends ComplexTask(Constants.scala_config_file_es_com) with ESTask[EsComEntity] {
+class ESComTask extends ComplexTask(Constants.scala_config_file_es_com) with ESTask[EsComEntity] {
   println("escomtask has been initialized")
   val repository = EsComRepository.singleton()
 
@@ -82,15 +62,20 @@ object ESComTask extends ComplexTask(Constants.scala_config_file_es_com) with ES
         ESComFill.batchFillComTriple(first)
         ESComFill.batchFillStatus(second)
         repository.index((first++second).asJava)
-        ESUpdateLogTask.repository.index(logs.asJava)
+        EsUpdateLogRepository.singleton.index(logs.asJava)
         (true, metas.last.id)
       }
       case _ => { Thread.sleep(1000*60*5); (false, checkpoint) }
     }
 
+  def info(): String = ???
 }
 
-object ESUpdateLogTask extends SimpleTask(Constants.scala_config_file_update_log) with ESTask[EsUpdateLogEntity] {
+object ESComTask {
+  def apply: ESComTask = new ESComTask()
+}
+
+class ESUpdateLogTask extends SimpleTask(Constants.scala_config_file_update_log) with ESTask[EsUpdateLogEntity] {
   val repository = EsUpdateLogRepository.singleton()
 
   def prepare(): Unit = {
@@ -113,4 +98,10 @@ object ESUpdateLogTask extends SimpleTask(Constants.scala_config_file_update_log
     Thread.sleep(1000*60*60)
     return (true, checkpoint)
   }
+
+  def info(): String = ???
+}
+
+object ESUpdateLogTask {
+  def apply: ESUpdateLogTask = new ESUpdateLogTask()
 }

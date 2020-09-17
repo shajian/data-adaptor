@@ -1,23 +1,25 @@
 package com.qcm
 
-import scala.collection.mutable
+import com.qcm.utils.Reflect
+
+import scala.collection.{immutable, mutable}
 
 package object tasks {
-  private val taskMap: mutable.Map[String, Task] = mutable.Map.empty
-  def register(name: String, task: Task): Unit = taskMap.put(name, task)
-  def get(name: String): Option[Task] = taskMap.get(name)
 
-  def start(name: String): Boolean = taskMap.get(name) match {
-    case Some(task) =>
-      task.run()
-      true
-    case _ => false
-  }
+  private val taskClasses: immutable.Map[String, String] = Map(
+    "es-com" -> "ESComTask",
+    "dummy" -> "DummyTask"
+  )
 
-  def close(name: String): Boolean = taskMap.get(name) match {
-    case None => false
-    case Some(task) =>
-      task.closeAsync()
-      true
+
+  def get(name: String): Option[Task] = taskClasses.get(name) match {
+    case Some(clazz) =>
+      try {
+        val task: Task = Reflect._new("com.qcm.tasks."+clazz)
+        Some(task)
+      } catch {
+        case _: Throwable => None
+      }
+    case _ => None
   }
 }

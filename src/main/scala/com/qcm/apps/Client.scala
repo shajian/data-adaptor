@@ -26,8 +26,6 @@ object Client {
   case class Stop() extends Command
 
   object TaskCaller {
-
-
     def apply(): Behavior[Command] = Behaviors.setup[Command] { context =>
       val proxies = (1 to 100).map(i => (i.toString, context.spawn(Proxy(), i.toString)))
 

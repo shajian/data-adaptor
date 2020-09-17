@@ -14,7 +14,7 @@ import com.qcm.es.entity.EsComEntity
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.jdk.CollectionConverters._
 import com.qcm.es.repository.EsComRepository
-import com.qcm.tasks.{ESComTask, Task}
+import com.qcm.tasks.{Task}
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -26,8 +26,8 @@ object TaskManager {
   case class Start(name: String, replyTo: ActorRef[Server.Reply]) extends Command
   case class Close(name: String, replyTo: ActorRef[Server.Reply]) extends Command
   case class Info(name: String, replyTo: ActorRef[Server.Reply]) extends Command
-  case class Begin(name: String, replyTo: ActorRef[Command]) extends Command
-  case class Failed(message: String) extends Command
+//  case class Begin(name: String, replyTo: ActorRef[Command]) extends Command
+//  case class Failed(message: String) extends Command
   case class Closed() extends Command
 
   val actors: mutable.Map[String, ActorRef[TaskActor.Command]] = mutable.Map.empty
@@ -36,16 +36,22 @@ object TaskManager {
     Behaviors.receiveMessage[Command] {
       case Start(name, replyTo) =>
         actors.get(name) match {
-          case Some(_) =>
-            replyTo ! Server.Reply(s"task '$name' had already been started")
+          case Some(actor) =>
+            val task = com.qcm.tasks.get(name).get
+            task.state match {
+              case 1 => replyTo ! Server.Reply(s"task '$name' had already been started")
+              case _ =>
+                actor ! TaskActor.Start(context.self)
+                replyTo ! Server.Reply(s"task '$name' is started successfully")
+            }
           case _ =>
             com.qcm.tasks.get(name) match {
               case Some(task) =>
                 val actor = context.spawn(TaskActor(task), task.name)
-                actors.put(task.name, actor)
+                actors.put(name, actor)
                 actor ! TaskActor.Start(context.self)
                 replyTo ! Server.Reply(s"task '$name' is started successfully")
-              case _ => replyTo ! Server.Reply(s"task '$name' has not registered: unknown task")
+              case _ => replyTo ! Server.Reply(s"task '$name' has not found: unknown task")
             }
         }
         Behaviors.same
@@ -60,17 +66,13 @@ object TaskManager {
         actors.get(name) match {
           case Some(actor) =>
             val task = com.qcm.tasks.get(name).get
-            task.state match {
-              case 4 => replyTo ! Server.Reply(s"task '$name' had already been closed.")
-              case _ =>
-                task.closeAsync()
-                implicit val timeout: Timeout = 5.seconds
-                import Server.system
-                val result: Future[Closed] = actor.ask[Closed](ref => TaskActor.Close(ref))
-                result.onComplete {
-                  case Success(_) => replyTo ! Server.Reply(s"task '$name' is closed successfully.")
-                  case Failure(ex) => replyTo ! Server.Reply(s"failed to close task '$name', err: ${ex.getMessage}")
-                }
+            task.closeAsync()
+            implicit val timeout: Timeout = 5.seconds
+            import Server.system
+            val result: Future[Closed] = actor.ask[Closed](ref => TaskActor.Close(ref))
+            result.onComplete {
+              case Success(_) => replyTo ! Server.Reply(s"task '$name' is closed successfully.")
+              case Failure(ex) => replyTo ! Server.Reply(s"failed to close task '$name', err: ${ex.getMessage}")
             }
           case _ => replyTo ! Server.Reply(s"task '$name' has not been started.")
         }

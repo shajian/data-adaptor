@@ -1,17 +1,12 @@
 package com.qcm.apps
 
 
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.Http
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.http.scaladsl.server.Directives._
-import com.qcm.tasks.ESComTask
+
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.util.Timeout
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
@@ -37,39 +32,39 @@ object Server {
   implicit val system = ActorSystem(TaskManager(), "web-task-controller")
   implicit val executionContext = system.executionContext
 
-//  object TaskDispatcher {
-//
-//    def apply(): Behavior[Command] = Behaviors.setup { context =>
-//      Behaviors.receive {
-//        case (_, Start(name, ref)) =>
-//          ref ! Message(s"$name started")
-//          Behaviors.same
-//      }
-//    }
-//  }
-
   def main(args: Array[String]): Unit = {
 
     val tasks: ActorRef[TaskManager.Command] = system
 
     implicit val respFormat = jsonFormat1(Reply)
+    implicit val timeout: Timeout = 5.seconds
 
     val route =
       concat(
-        get {
-          implicit val timeout: Timeout = 5.seconds
-
-          pathPrefix("start" / Remaining) { name =>
-            val reply: Future[Reply] = tasks.ask(ref => TaskManager.Start(name, ref))
-            complete(reply)
+        pathPrefix("start" / Remaining) { name =>
+          val reply: Future[Reply] = tasks.ask(ref => TaskManager.Start(name, ref))
+          onSuccess(reply) { r =>
+            complete(r)
           }
-
-          pathPrefix("close" / Remaining) { name =>
-            val reply: Future[Reply] = tasks.ask(ref => TaskManager.Close(name, ref))
-            complete(reply)
+        },
+        pathPrefix("close" / Remaining) { name =>
+          val reply: Future[Reply] = tasks.ask(ref => TaskManager.Close(name, ref))
+          onSuccess(reply) { r =>
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, r.msg))
           }
+        },
+        pathPrefix("info" / Remaining) { name =>
+          val reply: Future[Reply] = tasks.ask(ref => TaskManager.Info(name, ref))
+          onSuccess(reply) { r =>
+            complete(r)
+          }
+        },
+        pathSingleSlash {
+          complete(HttpEntity(ContentTypes.`text/html(UTF-8)`,
+            "<h1>Names of all tasks:</h1><ol><li>es-com</li><li>dummy</li></ol>"))
         }
-      )
+
+    )
 
     val bindingFuture = Http().newServerAt("localhost", 8181).bind(route)
     println(s"Server online at http://localhost:8181/\n Press RETURN to stop...")
